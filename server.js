@@ -145,6 +145,12 @@ app.post('/api/auth/signup', async (req, res) => {
     );
 
     const userId = result.rows[0].id;
+
+    // Initialize blank profile for the new user
+    await pool.query(`
+      INSERT INTO profile (id, name, streak, xp, xp_max, level, co2_kg, water_l, waste_kg, last_active_date)
+      VALUES ($1, $2, 0, 0, 100, 'Level 1 - 🌱 Eco Rookie', 0, '0', 0, '')
+    `, [userId, name.trim()]);
     const token = generateToken({ id: userId, email: email.trim(), name: name.trim() });
 
     res.status(201).json({
@@ -320,34 +326,30 @@ function evaluateStreak(profile) {
   return { streak: currentStreak, multiplier, diffDays };
 }
 
-app.get('/api/dashboard', async (req, res) => {
+app.get('/api/dashboard', authMiddleware, async (req, res) => {
   try {
     const todayStr = new Date().toISOString().split('T')[0];
-
     await pool.query('UPDATE quests SET completed = 0 WHERE last_completed_date != $1', [todayStr]);
 
-    const profileRes = await pool.query('SELECT * FROM profile WHERE id = 1');
+    // Use req.user.id from the auth middleware
+    const profileRes = await pool.query('SELECT * FROM profile WHERE id = $1', [req.user.id]);
     const user = profileRes.rows[0];
 
     const streakData = evaluateStreak(user);
 
     if (streakData.streak !== user?.streak) {
-      await pool.query('UPDATE profile SET streak = $1 WHERE id = 1', [streakData.streak]);
+      await pool.query('UPDATE profile SET streak = $1 WHERE id = $2', [streakData.streak, req.user.id]);
     }
 
     const questsRes = await pool.query('SELECT * FROM quests ORDER BY id ASC');
-
-    res.json({
-      user: { ...user, streak: streakData.streak, multiplier: streakData.multiplier },
-      quests: questsRes.rows
-    });
+    res.json({ user: { ...user, streak: streakData.streak, multiplier: streakData.multiplier }, quests: questsRes.rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 // Claim Quest
-app.post('/api/quests/toggle', async (req, res) => {
+app.post('/api/quests/toggle', authMiddleware, async (req, res) => {
   try {
     const { questId, completed } = req.body;
     const isDone = completed ? 1 : 0;
@@ -362,7 +364,8 @@ app.post('/api/quests/toggle', async (req, res) => {
 
     const rawXp = quest ? quest.xp_reward : (parseInt(req.body.xp, 10) || 15);
 
-    const profileRes = await pool.query('SELECT xp, streak, last_active_date FROM profile WHERE id = 1');
+    // Replaced id = 1 with req.user.id
+    const profileRes = await pool.query('SELECT xp, streak, last_active_date FROM profile WHERE id = $1', [req.user.id]);
     const profile = profileRes.rows[0];
 
     const streakData = evaluateStreak(profile);
@@ -381,9 +384,10 @@ app.post('/api/quests/toggle', async (req, res) => {
     const earnedXp = Math.round(rawXp * streakData.multiplier);
     const xpChange = isDone ? earnedXp : -earnedXp;
 
+    // Replaced id = 1 with req.user.id
     await pool.query(
-      'UPDATE profile SET xp = GREATEST(0, xp + $1), streak = $2, last_active_date = $3 WHERE id = 1',
-      [xpChange, newStreak, todayStr]
+      'UPDATE profile SET xp = GREATEST(0, xp + $1), streak = $2, last_active_date = $3 WHERE id = $4',
+      [xpChange, newStreak, todayStr, req.user.id]
     );
 
     await pool.query(
@@ -391,7 +395,8 @@ app.post('/api/quests/toggle', async (req, res) => {
       [isDone, isDone ? todayStr : '', questId]
     );
 
-    const updatedUserRes = await pool.query('SELECT * FROM profile WHERE id = 1');
+    // Replaced id = 1 with req.user.id
+    const updatedUserRes = await pool.query('SELECT * FROM profile WHERE id = $1', [req.user.id]);
     res.json({ success: true, user: updatedUserRes.rows[0], earnedXp, multiplier: streakData.multiplier });
 
   } catch (err) {
@@ -408,8 +413,8 @@ app.get('/api/reports', async (req, res) => {
   }
 });
 
-// AI Waste Report
-app.post('/api/reports', async (req, res) => {
+/// AI Waste Report
+app.post('/api/reports', authMiddleware, async (req, res) => {
   try {
     const { lat, lng, location, description, imageBase64 } = req.body;
     if (!lat || !lng) {
@@ -429,25 +434,16 @@ Return ONLY valid JSON.`;
 
       let parts = [prompt];
       if (imageBase64) {
-        parts.push({
-          inlineData: {
-            data: imageBase64,
-            mimeType: "image/jpeg"
-          }
-        });
+        parts.push({ inlineData: { data: imageBase64, mimeType: "image/jpeg" } });
       }
 
-      const result = await model.generateContent(parts);
-      const response = await result.response;
-      
-      let rawText = response.text().trim();
-      if (rawText.startsWith('```json')) {
-        rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-      } else if (rawText.startsWith('```')) {
-        rawText = rawText.replace(/```/g, '').trim();
-      }
-
-      const parsed = JSON.parse(rawText);
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: parts.map(p => typeof p === 'string' ? { text: p } : p) }],
+      generationConfig: { responseMimeType: "application/json" }
+    });
+    const response = await result.response;
+    
+    const parsed = JSON.parse(response.text());
       severity = parsed.severity || severity;
       complaintDraft = parsed.complaint_draft || complaintDraft;
     }
@@ -457,18 +453,16 @@ Return ONLY valid JSON.`;
       [lat, lng, location || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`, `${severity} - ${description || 'Hotspot reported'}`]
     );
 
+    // Replaced id = 1 with req.user.id
     await pool.query(
-      'UPDATE profile SET xp = xp + 30, waste_kg = waste_kg + 3, co2_kg = co2_kg + 8, water_l = CAST(COALESCE(NULLIF(water_l, \'\'), \'0\') AS INTEGER) + 300 WHERE id = 1'
+      `UPDATE profile 
+       SET xp = xp + 30, waste_kg = waste_kg + 3, co2_kg = co2_kg + 8, 
+           water_l = CAST(COALESCE(NULLIF(water_l, ''), '0') AS INTEGER) + 300 
+       WHERE id = $1`,
+       [req.user.id]
     );
 
-    res.json({
-      id: insertRes.rows[0].id,
-      success: true,
-      severity,
-      complaintDraft,
-      lat,
-      lng
-    });
+    res.json({ id: insertRes.rows[0].id, success: true, severity, complaintDraft, lat, lng });
 
   } catch (error) {
     console.error("Report Error:", error);
@@ -477,7 +471,7 @@ Return ONLY valid JSON.`;
 });
 
 // AI Waste Scanner
-app.post('/api/ai/scan-waste', async (req, res) => {
+app.post('/api/ai/scan-waste', authMiddleware, async (req, res) => {
   try {
     const { imageBase64 } = req.body;
     if (!imageBase64) return res.status(400).json({ error: 'No image provided' });
@@ -493,26 +487,26 @@ app.post('/api/ai/scan-waste', async (req, res) => {
 Do not include markdown fences or any other text outside the JSON.`;
 
     const imagePart = {
-      inlineData: {
-        data: imageBase64,
-        mimeType: "image/jpeg"
-      }
+      inlineData: { data: imageBase64, mimeType: "image/jpeg" }
     };
 
-    const result = await model.generateContent([prompt, imagePart]);
+    // Force JSON output at the SDK level
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }, imagePart] }],
+      generationConfig: { responseMimeType: "application/json" }
+    });
     const response = await result.response;
     
-    let rawText = response.text().trim();
-    if (rawText.startsWith('```json')) {
-      rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-    } else if (rawText.startsWith('```')) {
-      rawText = rawText.replace(/```/g, '').trim();
-    }
+    // No more regex replace needed!
+    const parsedData = JSON.parse(response.text());
 
-    const parsedData = JSON.parse(rawText);
-
+    // Replaced id = 1 with req.user.id
     await pool.query(
-      'UPDATE profile SET xp = xp + 25, waste_kg = waste_kg + 1, co2_kg = co2_kg + 3, water_l = CAST(COALESCE(NULLIF(water_l, \'\'), \'0\') AS INTEGER) + 120 WHERE id = 1'
+      `UPDATE profile 
+       SET xp = xp + 25, waste_kg = waste_kg + 1, co2_kg = co2_kg + 3, 
+           water_l = CAST(COALESCE(NULLIF(water_l, ''), '0') AS INTEGER) + 120 
+       WHERE id = $1`,
+       [req.user.id]
     );
 
     res.json(parsedData);
@@ -523,7 +517,7 @@ Do not include markdown fences or any other text outside the JSON.`;
 });
 
 // AI Food Rescue
-app.post('/api/ai/food-rescue', async (req, res) => {
+app.post('/api/ai/food-rescue', authMiddleware, async (req, res) => {
   try {
     const { ingredients, imageBase64 } = req.body;
     let parts = [];
@@ -547,10 +541,7 @@ Keep steps ultra-simple and focused on saving food from going to waste. Do not i
     if (imageBase64) {
       parts.push(prompt);
       parts.push({
-        inlineData: {
-          data: imageBase64,
-          mimeType: "image/jpeg"
-        }
+        inlineData: { data: imageBase64, mimeType: "image/jpeg" }
       });
     } else if (ingredients) {
       parts.push(`${prompt}\n\nAvailable Ingredients: ${ingredients}`);
@@ -558,20 +549,21 @@ Keep steps ultra-simple and focused on saving food from going to waste. Do not i
       return res.status(400).json({ error: 'Please enter ingredients or scan food items.' });
     }
 
-    const result = await model.generateContent(parts);
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: parts.map(p => typeof p === 'string' ? { text: p } : p) }],
+      generationConfig: { responseMimeType: "application/json" }
+    });
     const response = await result.response;
+    
+    const parsedRecipe = JSON.parse(response.text());
 
-    let rawText = response.text().trim();
-    if (rawText.startsWith('```json')) {
-      rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-    } else if (rawText.startsWith('```')) {
-      rawText = rawText.replace(/```/g, '').trim();
-    }
-
-    const parsedRecipe = JSON.parse(rawText);
-
+    // Replaced id = 1 with req.user.id
     await pool.query(
-      'UPDATE profile SET xp = xp + 20, waste_kg = waste_kg + 1, co2_kg = co2_kg + 2, water_l = CAST(COALESCE(NULLIF(water_l, \'\'), \'0\') AS INTEGER) + 250 WHERE id = 1'
+      `UPDATE profile 
+       SET xp = xp + 20, waste_kg = waste_kg + 1, co2_kg = co2_kg + 2, 
+           water_l = CAST(COALESCE(NULLIF(water_l, ''), '0') AS INTEGER) + 250 
+       WHERE id = $1`,
+       [req.user.id]
     );
 
     res.json(parsedRecipe);
@@ -582,12 +574,13 @@ Keep steps ultra-simple and focused on saving food from going to waste. Do not i
 });
 
 // Profile Update
-app.post('/api/profile/update', async (req, res) => {
+app.post('/api/profile/update', authMiddleware, async (req, res) => {
   try {
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: 'Name is required' });
 
-    await pool.query('UPDATE profile SET name = $1 WHERE id = 1', [name.trim()]);
+    // Replaced id = 1 with req.user.id
+    await pool.query('UPDATE profile SET name = $1 WHERE id = $2', [name.trim(), req.user.id]);
     res.json({ success: true, name: name.trim() });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -595,9 +588,10 @@ app.post('/api/profile/update', async (req, res) => {
 });
 
 // Dynamic Leaderboard
-app.get('/api/leaderboard', async (req, res) => {
+app.get('/api/leaderboard', authMiddleware, async (req, res) => {
   try {
-    const userRes = await pool.query('SELECT name, xp, streak FROM profile WHERE id = 1');
+    // Replaced id = 1 with req.user.id
+    const userRes = await pool.query('SELECT name, xp, streak FROM profile WHERE id = $1', [req.user.id]);
     const currentUser = userRes.rows[0];
 
     const calculateLevelNum = (xp) => {
@@ -639,12 +633,13 @@ app.get('/api/leaderboard', async (req, res) => {
 });
 
 // Custom Quest Completion
-app.post('/api/profile/quest', async (req, res) => {
+app.post('/api/profile/quest', authMiddleware, async (req, res) => {
   try {
     const xpReward = parseInt(req.body.xp, 10) || 15;
 
-    await pool.query('UPDATE profile SET xp = xp + $1, streak = streak + 1 WHERE id = 1', [xpReward]);
-    const updatedUser = await pool.query('SELECT * FROM profile WHERE id = 1');
+    // Replaced id = 1 with req.user.id
+    await pool.query('UPDATE profile SET xp = xp + $1, streak = streak + 1 WHERE id = $2', [xpReward, req.user.id]);
+    const updatedUser = await pool.query('SELECT * FROM profile WHERE id = $1', [req.user.id]);
 
     res.json({ success: true, user: updatedUser.rows[0], addedXp: xpReward });
   } catch (err) {

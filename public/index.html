@@ -1566,7 +1566,6 @@ window.addEventListener('DOMContentLoaded', () => {
   initDropZone();
 });
 initDropZone();
-    // Preview Selected File & Show Scan Button
 function handleFileSelected(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -1577,9 +1576,28 @@ function handleFileSelected(event) {
     const previewImg = document.getElementById('uploadPreviewImg');
     const scanBtn = document.getElementById('scanUploadBtn');
 
-    if (previewImg) previewImg.src = e.target.result;
+    if (previewImg) {
+      previewImg.src = e.target.result;
+      // Add a smooth fade-in effect
+      previewImg.style.opacity = '0';
+      previewImg.style.transition = 'opacity 0.4s ease-in-out';
+      setTimeout(() => previewImg.style.opacity = '1', 50);
+    }
+    
     if (previewWrap) previewWrap.style.display = 'block';
-    if (scanBtn) scanBtn.style.display = 'block';
+    if (scanBtn) {
+      scanBtn.style.display = 'block';
+      // Reset button state just in case it was stuck from a previous error
+      scanBtn.disabled = false;
+      scanBtn.style.background = 'var(--accent-emerald, #22c55e)';
+      scanBtn.style.color = '#000';
+      scanBtn.style.cursor = 'pointer';
+      scanBtn.innerHTML = '⚡ Classify Uploaded Photo (+25 XP)';
+    }
+    
+    // Hide the dropzone text to keep the UI clean
+    const dropzoneContent = document.querySelector('.unified-dropzone > div:first-child');
+    if (dropzoneContent) dropzoneContent.style.display = 'none';
   };
   reader.readAsDataURL(file);
 }
@@ -1740,12 +1758,22 @@ window.startCamera = async function(type) {
     function captureSnapshot(type) {
       const video = document.getElementById(type + 'Video');
       const canvas = document.getElementById(type + 'Canvas');
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
+      
+      const MAX_WIDTH = 800;
+      let width = video.videoWidth || 640;
+      let height = video.videoHeight || 480;
+      
+      if (width > MAX_WIDTH) {
+        height = Math.floor(height * (MAX_WIDTH / width));
+        width = MAX_WIDTH;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
       
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+      const base64 = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
 
       if (activeStream) {
         activeStream.getTracks().forEach(track => track.stop());
@@ -1857,8 +1885,31 @@ window.startCamera = async function(type) {
     function analyzeWasteFile() {
       const file = document.getElementById('wastePhotoInput').files[0];
       if (!file) return alert('Please choose an image file first!');
+      
       const reader = new FileReader();
-      reader.onload = () => sendWasteScan(reader.result.split(',')[1]);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_WIDTH) {
+            height = Math.floor(height * (MAX_WIDTH / width));
+            width = MAX_WIDTH;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
+          sendWasteScan(compressedBase64);
+        };
+        img.src = e.target.result;
+      };
       reader.readAsDataURL(file);
     }
 
