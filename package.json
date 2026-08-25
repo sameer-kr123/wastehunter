@@ -17,6 +17,7 @@
     "express": "^4.19.2",
     "express-session": "^1.17.3",
     "jsonwebtoken": "^9.0.2",
+    "pg": "^8.23.0",
     "sqlite3": "^5.1.7"
   }
 }
