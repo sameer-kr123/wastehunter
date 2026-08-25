@@ -1,5 +1,5 @@
 {
-  "name": "eco-pulse",
+  "name": "waste-hunter",
   "version": "1.0.0",
   "description": "AI Sustainability Companion",
   "main": "server.js",
@@ -15,9 +15,7 @@
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.19.2",
-    "express-session": "^1.17.3",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.23.0",
-    "sqlite3": "^5.1.7"
+    "pg": "^8.23.0"
   }
 }

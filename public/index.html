@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EcoPulse - AI Sustainability Studio</title>
+  <title>WasteHunter - AI Sustainability Companion</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 
   <style>
@@ -31,75 +31,166 @@
 }
   /* --- MOBILE SIDEBAR & PROFILE FIX --- */
 
-/* Hide mobile button on desktop */
+/* Ensure Mobile Menu Button is always visible above everything */
 .mobile-menu-btn {
   display: none;
 }
 
-/* Apply changes ONLY to mobile screens (tablets and phones) */
 @media (max-width: 768px) {
-  
-  /* 1. Style and show the Hamburger Button */
   .mobile-menu-btn {
-    display: block;
-    position: fixed;
-    top: 15px;
-    left: 15px;
-    z-index: 10000; /* Increased to stay above everything */
-    background: #0c151e;
-    color: #22c55e;
-    border: 1px solid #22c55e;
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-size: 22px;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    position: fixed !important;
+    top: 14px !important;
+    left: 14px !important;
+    z-index: 99999 !important; /* Topmost layer */
+    background: #0e151c !important;
+    color: #22c55e !important;
+    border: 1.5px solid #22c55e !important;
+    border-radius: 10px !important;
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 22px !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7) !important;
   }
 
-  /* 2. Convert Sidebar into a slide-out drawer */
+  /* Prevent hero/header cards from overlapping the hamburger button */
+  .main-content {
+    padding-top: 75px !important;
+  }
+}
+
+/* ==================== GLOBAL MOBILE ADAPTATIONS ==================== */
+@media (max-width: 768px) {
+  body {
+    display: block;
+    overflow-x: hidden;
+  }
+
+  /* 1. Main Viewport & Spacing */
+  .main-content {
+    padding: 70px 16px 30px 16px !important;
+    height: auto !important;
+    min-height: 100vh;
+    overflow-y: visible !important;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  /* 2. Responsive Dashboard Hero Card */
+  .user-hero-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+    padding: 16px !important;
+  }
+
+  .user-hero-card > div:last-child {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* 3. Responsive Grids */
+  .dashboard-grid,
+  .scanner-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+
+  .stats-row {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .stat-card {
+    padding: 12px 8px !important;
+  }
+
+  .stat-val {
+    font-size: 18px !important;
+  }
+
+  .scanner-badge-guide {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* 4. Scanner & Upload Card Touch Targets */
+  .unified-upload-box {
+    padding: 20px 14px !important;
+    border-radius: 16px !important;
+  }
+
+  .unified-dropzone {
+    padding: 24px 14px !important;
+  }
+
+  .btn-action,
+  .btn-secondary,
+  .btn-open-camera {
+    width: 100% !important;
+    padding: 14px 16px !important;
+    font-size: 15px !important;
+    min-height: 48px;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important; /* Forces center alignment */
+    text-align: center !important;
+  }
+
+  /* 5. Map & Share Buttons */
+  #map {
+    height: 250px !important;
+    border-radius: 10px;
+  }
+
+  .share-btn-group {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .btn-whatsapp,
+  .btn-twitter {
+    width: 100% !important;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  /* 6. Mobile Slide-out Drawer & Overlay */
   .sidebar, aside {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     transform: translateX(-100%) !important;
-    width: 260px !important;
-    
-    /* FIX: Use 100% as fallback, 100dvh for modern mobile browsers */
-    height: 100% !important; 
-    height: 100dvh !important; 
-    
-    background: #060d13 !important; 
-    z-index: 9999 !important; 
-    transition: transform 0.3s ease-in-out !important;
-    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.7) !important;
+    width: 270px !important;
+    height: 100dvh !important;
+    background: #060d13 !important;
+    z-index: 9999 !important;
+    transition: transform 0.28s ease-in-out !important;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.8) !important;
     display: flex !important;
     flex-direction: column !important;
-    padding-top: 70px !important; 
+    padding: 70px 14px 20px 14px !important;
+    overflow-y: auto;
   }
 
-  /* Class added by JS to slide the sidebar in */
   .sidebar.active, aside.active {
-    transform: translateX(0) !important; /* Slide back to original position */
+    transform: translateX(0) !important;
   }
 
-  /* 3. Fix the Profile Button at the bottom so it doesn't overflow */
-  .profile-card, .sidebar-footer, .profile-section {
-    position: absolute !important;
-    
-    /* FIX: Increased from 20px to safely clear bottom mobile bezels/bars */
-    bottom: 40px !important; 
-    
-    left: 10px !important;
-    width: calc(100% - 20px) !important;
-    box-sizing: border-box !important;
-    margin: 0 !important;
-  }
-
-  /* 4. Allow main content to take full width on mobile */
-  .main-content, .dashboard, main {
-    margin-left: 0 !important;
+  .user-profile-badge {
+    margin-top: auto !important;
     width: 100% !important;
-    padding-top: 70px !important; 
+    box-sizing: border-box;
+  }
+}
+
+/* Extra Small Phones (iPhone SE / <= 380px) */
+@media (max-width: 380px) {
+  .stats-row {
+    grid-template-columns: 1fr !important;
   }
 }
   /* Unified Scanner Card */
@@ -171,6 +262,8 @@
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center; /* Centers text and icon horizontally */
+  text-align: center;
   gap: 8px;
   font-size: 14px;
   transition: background 0.2s ease, transform 0.15s ease;
@@ -437,12 +530,14 @@ body {
 </button>
   <!-- Sidebar -->
   <aside class="sidebar">
-   <div style="padding: 20px 18px 18px 18px; display: flex; align-items: center; justify-content: flex-start;">
-  <div onclick="goToDashboard()" style="cursor: pointer; display: flex; align-items: center;">
+   <div style="padding: 24px 16px 12px 16px; display: flex; align-items: center; justify-content: center; width: 100%;">
+  <div onclick="goToDashboard()" style="cursor: pointer; display: flex; justify-content: center; align-items: center; width: 100%;">
     <img 
       src="/logo.png" 
       alt="WasteHunter Logo" 
-      style="width: 52px; height: 52px; border-radius: 12px; object-fit: cover; box-shadow: 0 0 14px rgba(34, 197, 94, 0.3);" 
+      style="width: 82px; height: 82px; border-radius: 18px; object-fit: cover; box-shadow: 0 0 20px rgba(34, 197, 94, 0.35); transition: transform 0.2s ease;" 
+      onmouseover="this.style.transform='scale(1.04)'"
+      onmouseout="this.style.transform='scale(1)'"
     />
   </div>
 </div>
@@ -451,7 +546,6 @@ body {
         <li class="nav-item" onclick="switchTab('waste-scanner', this)">♻️ Waste Scanner</li>
         <li class="nav-item" onclick="switchTab('food-rescue', this)">🍎 Food Rescue</li>
         <li class="nav-item" onclick="switchTab('reports', this)">🏙️ Waste Reports & Map</li>
-        <li class="nav-item" onclick="switchTab('challenges')">🎯 Daily Challenges</li>
         <li class="nav-item" onclick="switchTab('leaderboard', this)">🎖️ Leaderboard</li>
       </ul>
     </div>
@@ -465,7 +559,7 @@ body {
     </div>
     <div>
       <div id="userNameDisplay" style="font-size: 13px; font-weight: 800; color: #fff;">Nikhil</div>
-      <div id="userRankDisplay" style="font-size: 10px; color: var(--accent-hunter-green); font-weight: 600;">🌱 Eco Rookie</div>
+      <div id="userRankDisplay" style="font-size: 10px; color: var(--accent-hunter-green); font-weight: 600;">🍂 Rookie Hunter</div>
     </div>
   </div>
   <span id="authBadgeStatus" style="font-size: 11px; color: #64748b; font-weight: 700;">Profile ↗</span>
@@ -566,74 +660,9 @@ body {
           <span style="font-size: 11px; font-weight: 800; color: #3b82f6; background: rgba(59, 130, 246, 0.15); padding: 3px 8px; border-radius: 6px;">+50 XP</span>
         </div>
 
-        <!-- 4. Daily Challenge (+100 XP) -->
-        <div onclick="switchTab('challenges')" style="cursor: pointer; background: linear-gradient(145deg, #22122b, #15091c); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 16px; padding: 18px 14px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px;">
-          <div style="width: 48px; height: 48px; border-radius: 14px; background: rgba(168, 85, 247, 0.15); display: flex; align-items: center; justify-content: center; font-size: 24px;">🎯</div>
-          <div style="font-size: 13px; font-weight: 800; color: #fff; line-height: 1.2;">DAILY CHALLENGE</div>
-          <span style="font-size: 11px; font-weight: 800; color: #a855f7; background: rgba(168, 85, 247, 0.15); padding: 3px 8px; border-radius: 6px;">+100 XP</span>
-        </div>
+      
       </div>
     </div>
-
-    <!-- 7-Day Streak Tracker -->
-    <div class="card" style="margin-top: 18px; margin-bottom: 20px; background: linear-gradient(145deg, #111a22, #0d141b); border: 1px solid var(--bg-card-border); border-radius: 16px; padding: 18px 20px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 18px;">🔥</span>
-          <span style="font-size: 14px; font-weight: 800; color: #fff; letter-spacing: 0.5px; text-transform: uppercase;">
-            <span id="streakCountNumber">0</span> Day Streak
-          </span>
-        </div>
-        <span style="font-size: 11px; font-weight: 700; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 4px 8px; border-radius: 6px;">
-          Streak Goal: 7 Days
-        </span>
-      </div>
-
-      <!-- 7-Day Dots Chain -->
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-        <div class="streak-day" id="day-dot-1" style="width: 34px; height: 34px; border-radius: 50%; background: #1e293b; border: 2px solid #334155; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #64748b;">1</div>
-        <div class="streak-day" id="day-dot-2" style="width: 34px; height: 34px; border-radius: 50%; background: #1e293b; border: 2px solid #334155; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #64748b;">2</div>
-        <div class="streak-day" id="day-dot-3" style="width: 34px; height: 34px; border-radius: 50%; background: #1e293b; border: 2px solid #334155; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #64748b;">3</div>
-        <div class="streak-day" id="day-dot-4" style="width: 34px; height: 34px; border-radius: 50%; background: #1e293b; border: 2px solid #334155; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #64748b;">4</div>
-        <div class="streak-day" id="day-dot-5" style="width: 34px; height: 34px; border-radius: 50%; background: #1e293b; border: 2px solid #334155; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #64748b;">5</div>
-        <div class="streak-day" id="day-dot-6" style="width: 34px; height: 34px; border-radius: 50%; background: #1e293b; border: 2px solid #334155; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #64748b;">6</div>
-        <div class="streak-day" id="day-dot-7" style="width: 38px; height: 38px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); border: 2px solid #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); cursor: pointer;" title="Day 7 Mystery Box Reward!">🎁</div>
-      </div>
-    </div>
-
-    <!-- Badges & Achievements Shelf -->
-    <div class="card" style="margin-top: 18px; margin-bottom: 24px; background: linear-gradient(145deg, #111a22, #0d141b); border: 1px solid var(--bg-card-border); border-radius: 16px; padding: 18px 20px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-        <h3 style="margin: 0; font-size: 14px; font-weight: 800; letter-spacing: 0.5px; color: #fff; text-transform: uppercase;">
-          🏅 Badges & Achievements
-        </h3>
-        <span style="font-size: 11px; color: var(--accent-hunter-green); font-weight: 700;">Unlocked Trophies</span>
-      </div>
-
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 10px; text-align: center;">
-        <div id="badge-first-scan" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border-radius: 12px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3);">
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(34, 197, 94, 0.2); display: flex; align-items: center; justify-content: center; font-size: 18px;">♻️</div>
-          <span style="font-size: 10px; font-weight: 700; color: #fff; line-height: 1.1;">First Scan</span>
-        </div>
-        <div id="badge-food-saver" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border-radius: 12px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3);">
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(245, 158, 11, 0.2); display: flex; align-items: center; justify-content: center; font-size: 18px;">🍎</div>
-          <span style="font-size: 10px; font-weight: 700; color: #fff; line-height: 1.1;">Food Saver</span>
-        </div>
-        <div id="badge-reporter" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border-radius: 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3);">
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(59, 130, 246, 0.2); display: flex; align-items: center; justify-content: center; font-size: 18px;">🛡️</div>
-          <span style="font-size: 10px; font-weight: 700; color: #fff; line-height: 1.1;">Reporter</span>
-        </div>
-        <div id="badge-streak-master" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border-radius: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(239, 68, 68, 0.2); display: flex; align-items: center; justify-content: center; font-size: 18px;">🔥</div>
-          <span style="font-size: 10px; font-weight: 700; color: #fff; line-height: 1.1;">Streak Master</span>
-        </div>
-        <div id="badge-waste-warrior" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border-radius: 12px; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3);">
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(168, 85, 247, 0.2); display: flex; align-items: center; justify-content: center; font-size: 18px;">⭐</div>
-          <span style="font-size: 10px; font-weight: 700; color: #fff; line-height: 1.1;">Waste Warrior</span>
-        </div>
-      </div>
-    </div>
-
   </div> <!-- End of tab-dashboard -->
 
     <!-- TAB 2: WASTE SCANNER (REDESIGNED) -->
@@ -779,28 +808,6 @@ body {
 
   </div>
 </div>
-<!-- Tab: Daily Challenges -->
-<div id="tab-challenges" class="tab-view" style="display: none;">
-  <div style="max-width: 800px; margin: 0 auto; padding-top: 10px;">
-    <button class="red-back-btn" onclick="returnToDashboard()">⬅ Back</button>
-    <!-- Top Banner -->
-    <div style="background: #0c131a; border: 1px solid rgba(255,255,255,0.07); border-radius: 18px; padding: 22px 26px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center;">
-      <div>
-        <h2 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 900; color: #fff;">🎯 DAILY ECO MISSIONS</h2>
-        <p style="margin: 0; font-size: 13px; color: #94a3b8;">Complete missions daily to earn instant Hunter XP, boost your rank, and maintain streaks.</p>
-      </div>
-      <span style="background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); color: #c084fc; padding: 7px 16px; border-radius: 999px; font-size: 12px; font-weight: 800;">
-        +250 MAX XP
-      </span>
-    </div>
-
-    <!-- Challenges Dynamic Container -->
-    <div id="dailyChallengesList" style="display: flex; flex-direction: column; gap: 14px;">
-      <!-- Populated via JavaScript -->
-    </div>
-
-  </div>
-</div>
 
     <!-- TAB 5: DYNAMIC LEADERBOARD -->
 <!-- Tab: Leaderboard -->
@@ -816,7 +823,6 @@ body {
         <div style="display: inline-flex; background: #0e1a24; padding: 4px; border-radius: 999px; gap: 4px; border: 1px solid rgba(255,255,255,0.06);">
           <button onclick="setLeaderboardFilter('global')" id="filterGlobalBtn" style="padding: 7px 22px; border-radius: 999px; border: none; font-size: 13px; font-weight: 800; cursor: pointer; background: #22c55e; color: #000;">Global</button>
           <button onclick="setLeaderboardFilter('city')" id="filterCityBtn" style="padding: 7px 22px; border-radius: 999px; border: none; font-size: 13px; font-weight: 800; cursor: pointer; background: transparent; color: #94a3b8;">City</button>
-          <button onclick="setLeaderboardFilter('friends')" id="filterFriendsBtn" style="padding: 7px 22px; border-radius: 999px; border: none; font-size: 13px; font-weight: 800; cursor: pointer; background: transparent; color: #94a3b8;">Friends</button>
         </div>
       </div>
 
@@ -825,18 +831,18 @@ body {
         <!-- Top Players loaded dynamically -->
       </div>
 
-      <!-- User Active Rank Bar (Green Bar Matching Image 5) -->
-      <div id="currentUserLeaderboardCard" style="display: flex; align-items: center; justify-content: space-between; background: #15803d; border-radius: 16px; padding: 14px 18px; color: #fff; margin-top: 14px; box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4);">
-        <div style="display: flex; align-items: center; gap: 14px;">
-          <span id="lbUserRank" style="font-size: 18px; font-weight: 900; min-width: 24px;">23</span>
-          <div id="lbUserAvatar" style="width: 44px; height: 44px; border-radius: 50%; background: #facc15; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 900; font-size: 16px;">S</div>
-          <div>
-            <div style="font-size: 15px; font-weight: 800;"><span id="lbUserName">You</span> <span style="font-size: 12px; opacity: 0.85;">(EcoHunter)</span></div>
-            <div id="lbUserLevel" style="font-size: 12px; font-weight: 600; opacity: 0.9;">Level 1</div>
-          </div>
-        </div>
-        <div id="lbUserXp" style="font-size: 15px; font-weight: 900;">0 XP</div>
-      </div>
+      <!-- User Active Rank Bar -->
+<div id="currentUserLeaderboardCard" style="display: flex; align-items: center; justify-content: space-between; background: #15803d; border-radius: 16px; padding: 14px 18px; color: #fff; margin-top: 14px; box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4);">
+  <div style="display: flex; align-items: center; gap: 14px;">
+    <span id="lbUserRank" style="font-size: 18px; font-weight: 900; min-width: 24px;">1</span>
+    <div id="lbUserAvatar" style="width: 44px; height: 44px; border-radius: 50%; background: #22c55e; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 900; font-size: 16px;">T</div>
+    <div>
+      <div style="font-size: 15px; font-weight: 800;" id="lbUserName">You</div>
+      <div id="lbUserLevel" style="font-size: 12px; font-weight: 600; opacity: 0.9;">Level 1 • Rookie Hunter</div>
+    </div>
+  </div>
+  <div id="lbUserXp" style="font-size: 15px; font-weight: 900;">0 XP</div>
+</div>
 
     </div>
   </div>
@@ -847,12 +853,19 @@ body {
 
   <script>
     let activeStream = null;
-    let map = null;
-    let tempMarker = null;
-    let currentSelectedCoords = null;
+  function applyServerProfileUpdate(updatedUser) {
+  if (!updatedUser) return;
 
-  // --- Return to Dashboard Logic ---
-function returnToDashboard() {
+  let localUser = JSON.parse(localStorage.getItem('user')) || {};
+  localUser = { ...localUser, ...updatedUser };
+  localStorage.setItem('user', JSON.stringify(localUser));
+  currentUserData = localUser;
+
+  updateHeroUI();
+  if (typeof renderLeaderboard === 'function') renderLeaderboard();
+}
+    // --- Return to Dashboard Logic ---
+  function returnToDashboard() {
   // Find all sidebar navigation links
   const sidebarLinks = document.querySelectorAll('.sidebar a, aside a, .nav-item, .sidebar li');
   
@@ -890,30 +903,29 @@ let currentUserData = {
   streak: 2
 };
 
-const DAILY_CHALLENGES = [
-  { id: 'c1', title: '📷 AI Scan 1 Plastic Item', desc: 'Use AI Waste Scanner to classify 1 recyclable item', xp: 50, claimed: false, icon: '♻️' },
-  { id: 'c2', title: '🍎 Log 1 Food Rescue Item', desc: 'Prevent spoilage by logging pantry food', xp: 40, claimed: false, icon: '🥗' },
-  { id: 'c3', title: '📍 Report 1 Dump Hotspot', desc: 'Pin and report a local waste hotspot on map', xp: 80, claimed: false, icon: '📍' },
-  { id: 'c4', title: '🔥 Check In Daily Streak', desc: 'Visit and check into WasteHunter daily', xp: 50, claimed: false, icon: '🔥' }
-];
-
-const GLOBAL_LEADERBOARD_SEED = [
-  { rank: 1, name: 'Rahul', level: 24, xp: 12450, avatar: '👨‍🦱', medal: '🥇' },
-  { rank: 2, name: 'Priya', level: 22, xp: 11800, avatar: '👩', medal: '🥈' },
-  { rank: 3, name: 'Sameer', level: 10, xp: 1850, avatar: '🧔', medal: '🥉' },
-  { rank: 4, name: 'Ananya', level: 8, xp: 1450, avatar: '👩‍🦰', medal: '4' },
-  { rank: 5, name: 'Arjun', level: 5, xp: 720, avatar: '🧑', medal: '5' }
-];
-
 function getRankInfo(xp) {
+  xp = xp || 0;
   let current = RANKS[0];
   let next = RANKS[1];
 
   for (let i = 0; i < RANKS.length; i++) {
     if (xp >= RANKS[i].minXp) {
       current = RANKS[i];
-      next = RANKS[i + 1] || { minXp: current.minXp + 20000, level: 100 };
+      next = RANKS[i + 1] || null;
     }
+  }
+
+  // Handle Max Tier (Planet Legend)
+  if (!next) {
+    return {
+      level: current.level,
+      title: current.title,
+      icon: current.icon,
+      fill: current.fill,
+      stroke: current.stroke,
+      targetXp: current.minXp,
+      progressPercent: 100
+    };
   }
 
   const xpInTier = xp - current.minXp;
@@ -934,8 +946,10 @@ function getRankInfo(xp) {
 function updateHeroUI() {
   const user = JSON.parse(localStorage.getItem('user')) || currentUserData;
   const xp = user.xp || 0;
+  const streak = user.streak || 0;
   const info = getRankInfo(xp);
 
+  // 1. Hero Card Elements
   const heroName = document.getElementById('heroUserName');
   const heroAvatar = document.getElementById('heroAvatar');
   const heroLvl = document.getElementById('heroLevelText');
@@ -945,7 +959,9 @@ function updateHeroUI() {
   const tgtXp = document.getElementById('heroTargetXp');
   const shieldIcon = document.getElementById('heroShieldIcon');
   const shieldSvgPaths = document.querySelectorAll('#heroShieldBadge svg path');
+  const streakCount = document.getElementById('streakCount');
 
+  // Update Hero Text & Values
   if (heroName) heroName.innerText = `${user.name || 'EcoHunter'}!`;
   if (heroAvatar) heroAvatar.innerText = (user.name || 'E').charAt(0).toUpperCase();
   if (heroLvl) heroLvl.innerText = `Level ${info.level}`;
@@ -954,53 +970,24 @@ function updateHeroUI() {
   if (curXp) curXp.innerText = xp.toLocaleString();
   if (tgtXp) tgtXp.innerText = info.targetXp.toLocaleString();
   if (shieldIcon) shieldIcon.innerText = info.icon;
+  if (streakCount) streakCount.innerText = streak;
 
-  // Dynamically style shield colors to tier
+  // Dynamically style shield SVG colors to match the tier
   if (shieldSvgPaths && shieldSvgPaths.length >= 2) {
     shieldSvgPaths[0].setAttribute('fill', info.stroke);
     shieldSvgPaths[1].setAttribute('fill', info.fill);
   }
+
+  // 2. Keep bottom-left sidebar user badge in sync
+  const sideAvatar = document.getElementById('userAvatar');
+  const sideName = document.getElementById('userNameDisplay');
+  const sideRank = document.getElementById('userRankDisplay');
+
+  if (sideAvatar) sideAvatar.innerText = (user.name || 'E').charAt(0).toUpperCase();
+  if (sideName) sideName.innerText = user.name || 'Hunter';
+  if (sideRank) sideRank.innerText = `${info.icon} ${info.title}`;
 }
 
-function renderDailyChallenges() {
-  const container = document.getElementById('dailyChallengesList');
-  if (!container) return;
-
-  const saved = localStorage.getItem('daily_challenges');
-  const challenges = saved ? JSON.parse(saved) : DAILY_CHALLENGES;
-
-  container.innerHTML = challenges.map((c, i) => `
-    <div style="display: flex; align-items: center; justify-content: space-between; background: #0c131a; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 18px 22px;">
-      <div style="display: flex; align-items: center; gap: 14px;">
-        <div style="font-size: 28px; width: 48px; height: 48px; border-radius: 12px; background: #16202c; display: flex; align-items: center; justify-content: center;">
-          ${c.icon}
-        </div>
-        <div>
-          <div style="font-size: 15px; font-weight: 800; color: #fff;">${c.title}</div>
-          <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">${c.desc}</div>
-        </div>
-      </div>
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <span style="font-size: 13px; font-weight: 800; color: #a855f7;">+${c.xp} XP</span>
-        <button onclick="claimChallenge(${i})" ${c.claimed ? 'disabled' : ''} style="padding: 9px 18px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: ${c.claimed ? 'default' : 'pointer'}; border: none; background: ${c.claimed ? '#1e293b' : '#22c55e'}; color: ${c.claimed ? '#64748b' : '#000'};">
-          ${c.claimed ? 'Claimed ✓' : 'Claim Reward'}
-        </button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function claimChallenge(index) {
-  let saved = localStorage.getItem('daily_challenges');
-  let challenges = saved ? JSON.parse(saved) : DAILY_CHALLENGES;
-  if (challenges[index].claimed) return;
-
-  challenges[index].claimed = true;
-  localStorage.setItem('daily_challenges', JSON.stringify(challenges));
-
-  addHunterXP(challenges[index].xp);
-  renderDailyChallenges();
-}
 
 function addHunterXP(points) {
   let user = JSON.parse(localStorage.getItem('user')) || currentUserData;
@@ -1044,91 +1031,92 @@ function showXpGainToast(text) {
   }, 2600);
 }
 
-// Automatically mark challenge complete if scanner is used
-function checkAndCompleteDailyChallenge(challengeId) {
-  let saved = localStorage.getItem('daily_challenges');
-  let challenges = saved ? JSON.parse(saved) : DAILY_CHALLENGES;
-  const match = challenges.find(c => c.id === challengeId);
-  if (match && !match.claimed) {
-    match.claimed = true;
-    localStorage.setItem('daily_challenges', JSON.stringify(challenges));
-    renderDailyChallenges();
-  }
-}
 
-function renderLeaderboard(filter = 'global') {
+let currentLeaderboardFilter = 'global';
+
+async function renderLeaderboard(filter = currentLeaderboardFilter) {
+  currentLeaderboardFilter = filter;
   const container = document.getElementById('leaderboardList');
   if (!container) return;
 
-  const user = JSON.parse(localStorage.getItem('user')) || currentUserData;
-  const userXp = user.xp || 0;
-  const userLevel = Math.max(1, Math.floor(userXp / 150) + 1);
+  const token = localStorage.getItem('token');
+  if (!token) return;
 
-  let players = [...GLOBAL_LEADERBOARD_SEED];
-  if (filter === 'city') {
-    players = [
-      { rank: 1, name: 'Priya', level: 22, xp: 11800, avatar: '👩', medal: '🥇' },
-      { rank: 2, name: 'Arjun', level: 17, xp: 8600, avatar: '🧑', medal: '🥈' }
-    ];
-  } else if (filter === 'friends') {
-    players = [
-      { rank: 1, name: 'Rahul', level: 24, xp: 12450, avatar: '👨‍🦱', medal: '🥇' },
-      { rank: 2, name: 'Sameer', level: userLevel, xp: userXp, avatar: '🧔', medal: '🥈' }
-    ];
-  }
+  try {
+    const res = await fetch(`/api/leaderboard?filter=${filter}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const players = await res.json();
 
-  container.innerHTML = players.map(p => {
-    const isMedal = ['🥇', '🥈', '🥉'].includes(p.medal);
-    const badgeStyle = isMedal
-      ? 'font-size: 20px;'
-      : 'font-size: 13px; font-weight: 800; color: #94a3b8; width: 22px; text-align: center;';
-
-    return `
-      <div style="display: flex; align-items: center; justify-content: space-between; background: #0c151e; border: 1px solid rgba(255,255,255,0.05); border-radius: 14px; padding: 12px 18px;">
-        <div style="display: flex; align-items: center; gap: 14px;">
-          <span style="${badgeStyle}">${p.medal}</span>
-          <div style="width: 38px; height: 38px; border-radius: 50%; background: #1e293b; display: flex; align-items: center; justify-content: center; font-size: 18px;">
-            ${p.avatar}
-          </div>
-          <div>
-            <div style="font-size: 14px; font-weight: 800; color: #fff;">${p.name}</div>
-            <div style="font-size: 11px; color: #94a3b8; font-weight: 600;">Level ${p.level}</div>
-          </div>
+    if (!Array.isArray(players) || players.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center; padding:30px 10px; color:#64748b; font-size:13px;">
+          ${filter === 'city' ? '🏙️ No other hunters registered in your city yet.' : 'No hunters found.'}
         </div>
-        <div style="font-size: 14px; font-weight: 800; color: #e2e8f0;">${p.xp.toLocaleString()} XP</div>
-      </div>
-    `;
-  }).join('');
+      `;
+      return;
+    }
 
-  const lbRank = document.getElementById('lbUserRank');
-  const lbName = document.getElementById('lbUserName');
-  const lbLvl = document.getElementById('lbUserLevel');
-  const lbXp = document.getElementById('lbUserXp');
-  const lbAvatar = document.getElementById('lbUserAvatar');
+    container.innerHTML = players.map(p => {
+      const rankNum = p.rank || 1;
+      const rankBadge = rankNum === 1 ? '🥇' : rankNum === 2 ? '🥈' : rankNum === 3 ? '🥉' : `${rankNum}`;
+      const badgeStyle = [1, 2, 3].includes(rankNum)
+        ? 'font-size: 20px; width: 28px; text-align: center;'
+        : 'font-size: 14px; font-weight: 800; color: #94a3b8; width: 28px; text-align: center;';
 
-  if (lbRank) lbRank.innerText = userXp > 10000 ? '3' : '23';
-  if (lbName) lbName.innerText = user.name || 'You';
-  if (lbLvl) lbLvl.innerText = `Level ${userLevel}`;
-  if (lbXp) lbXp.innerText = `${userXp.toLocaleString()} XP`;
-  if (lbAvatar) lbAvatar.innerText = (user.name || 'Y').charAt(0).toUpperCase();
+      const playerRankInfo = getRankInfo(p.xp);
+      const isYou = p.isCurrent;
+
+      return `
+        <div style="display: flex; align-items: center; justify-content: space-between; background: ${isYou ? 'rgba(34, 197, 94, 0.15)' : '#0c151e'}; border: 1px solid ${isYou ? 'rgba(34, 197, 94, 0.5)' : 'rgba(255,255,255,0.05)'}; border-radius: 14px; padding: 12px 18px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <span style="${badgeStyle}">${rankBadge}</span>
+            <div style="width: 38px; height: 38px; border-radius: 50%; background: ${isYou ? '#22c55e' : '#1e293b'}; color: ${isYou ? '#000' : '#fff'}; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px;">
+              ${p.avatar}
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 800; color: ${isYou ? '#4ade80' : '#fff'};">
+                ${p.name} ${isYou ? '<span style="font-size: 10px; background: #22c55e; color: #000; padding: 1px 6px; border-radius: 4px; font-weight: 900; margin-left: 4px;">YOU</span>' : ''}
+              </div>
+              <div style="font-size: 11px; color: #94a3b8; font-weight: 600;">Level ${playerRankInfo.level} • ${playerRankInfo.title}</div>
+            </div>
+          </div>
+          <div style="font-size: 14px; font-weight: 800; color: #e2e8f0;">${(p.xp || 0).toLocaleString()} XP</div>
+        </div>
+      `;
+    }).join('');
+
+    // Update bottom active user status card
+    const currentUser = players.find(p => p.isCurrent) || players[0];
+    if (currentUser) {
+      const info = getRankInfo(currentUser.xp);
+      const lbRank = document.getElementById('lbUserRank');
+      const lbName = document.getElementById('lbUserName');
+      const lbLvl = document.getElementById('lbUserLevel');
+      const lbXp = document.getElementById('lbUserXp');
+      const lbAvatar = document.getElementById('lbUserAvatar');
+
+      if (lbRank) lbRank.innerText = currentUser.rank;
+      if (lbName) lbName.innerText = currentUser.name;
+      if (lbLvl) lbLvl.innerText = `Level ${info.level} • ${info.title}`;
+      if (lbXp) lbXp.innerText = `${(currentUser.xp || 0).toLocaleString()} XP`;
+      if (lbAvatar) lbAvatar.innerText = currentUser.avatar;
+    }
+  } catch (err) {
+    console.error('Failed to load leaderboard:', err);
+  }
 }
 
 function setLeaderboardFilter(type) {
   const globalBtn = document.getElementById('filterGlobalBtn');
   const cityBtn = document.getElementById('filterCityBtn');
-  const friendsBtn = document.getElementById('filterFriendsBtn');
 
-  [globalBtn, cityBtn, friendsBtn].forEach(b => {
-    if (b) {
-      b.style.background = 'transparent';
-      b.style.color = '#94a3b8';
-    }
-  });
-
-  const activeBtn = type === 'global' ? globalBtn : type === 'city' ? cityBtn : friendsBtn;
-  if (activeBtn) {
-    activeBtn.style.background = '#22c55e';
-    activeBtn.style.color = '#000';
+  if (type === 'global') {
+    if (globalBtn) { globalBtn.style.background = '#22c55e'; globalBtn.style.color = '#000'; }
+    if (cityBtn) { cityBtn.style.background = 'transparent'; cityBtn.style.color = '#94a3b8'; }
+  } else if (type === 'city') {
+    if (cityBtn) { cityBtn.style.background = '#22c55e'; cityBtn.style.color = '#000'; }
+    if (globalBtn) { globalBtn.style.background = 'transparent'; globalBtn.style.color = '#94a3b8'; }
   }
 
   renderLeaderboard(type);
@@ -1138,17 +1126,14 @@ function setLeaderboardFilter(type) {
 const origSwitchTab = window.switchTab;
 window.switchTab = function(tabName, el) {
   if (origSwitchTab) origSwitchTab(tabName, el);
-  if (tabName === 'challenges') renderDailyChallenges();
   if (tabName === 'leaderboard') renderLeaderboard('global');
   if (tabName === 'dashboard') updateHeroUI();
 };
 
 document.addEventListener('DOMContentLoaded', () => {
   updateHeroUI();
-  renderDailyChallenges();
   renderLeaderboard('global');
 });
-// Sync user state from localStorage on page load
 function syncUserState() {
   const userStr = localStorage.getItem('user');
   const token = localStorage.getItem('token');
@@ -1162,10 +1147,13 @@ function syncUserState() {
   if (token && userStr) {
     try {
       const user = JSON.parse(userStr);
+      const xp = user.xp || 0;
+      const info = getRankInfo(xp);
       const initial = (user.name || 'H').charAt(0).toUpperCase();
+
       if (avatarEl) avatarEl.innerText = initial;
       if (nameEl) nameEl.innerText = user.name || 'Hunter';
-      if (rankEl) rankEl.innerText = user.title || '🌱 Eco Rookie';
+      if (rankEl) rankEl.innerText = `${info.icon} ${info.title}`;
       if (welcomeEl) welcomeEl.innerText = `Hi, ${user.name || 'Hunter'}`;
       if (badgeStatus) badgeStatus.innerText = 'Profile ↗';
     } catch (e) {
@@ -1174,7 +1162,7 @@ function syncUserState() {
   } else {
     if (avatarEl) avatarEl.innerText = '?';
     if (nameEl) nameEl.innerText = 'Sign In';
-    if (rankEl) rankEl.innerText = 'Guest Hunter';
+    if (rankEl) rankEl.innerText = '🍂 Rookie Hunter';
     if (welcomeEl) welcomeEl.innerText = 'Hi, Hunter';
     if (badgeStatus) badgeStatus.innerText = 'Login ↗';
   }
@@ -1183,280 +1171,31 @@ function syncUserState() {
 document.addEventListener('DOMContentLoaded', () => {
   syncUserState();
 });
-    function renderStreakChain(streak) {
-  const countEl = document.getElementById('streakCountNumber');
-  if (countEl) countEl.innerText = streak || 0;
 
-  const currentDay = Math.min((streak % 7) || (streak > 0 ? 7 : 0), 7);
-
-  for (let i = 1; i <= 6; i++) {
-    const dot = document.getElementById(`day-dot-${i}`);
-    if (dot) {
-      if (i <= currentDay) {
-        dot.style.background = '#22c55e';
-        dot.style.borderColor = '#22c55e';
-        dot.style.color = '#000';
-        dot.innerText = '✓';
-        dot.style.boxShadow = '0 0 8px rgba(34, 197, 94, 0.4)';
-      } else {
-        dot.style.background = '#1e293b';
-        dot.style.borderColor = '#334155';
-        dot.style.color = '#64748b';
-        dot.innerText = i;
-        dot.style.boxShadow = 'none';
-      }
-    }
-  }
-
-  const giftDot = document.getElementById('day-dot-7');
-  if (giftDot) {
-    if (currentDay === 7 && streak > 0) {
-      giftDot.style.background = '#f59e0b';
-      giftDot.style.borderColor = '#fbbf24';
-      giftDot.style.boxShadow = '0 0 14px rgba(245, 158, 11, 0.7)';
-    } else {
-      giftDot.style.background = 'rgba(245, 158, 11, 0.15)';
-      giftDot.style.borderColor = '#f59e0b';
-      giftDot.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.3)';
-    }
-  }
-}
-// Check and illuminate unlocked badges dynamically
-function updateBadges(user) {
-  if (!user) return;
-  const xp = user.xp || 0;
-  const streak = user.streak || 0;
-
-  // 1. First Scan: Unlocks if user has at least 10 XP
-  const bFirstScan = document.getElementById('badge-first-scan');
-  if (bFirstScan) {
-    if (xp >= 10) {
-      bFirstScan.style.opacity = '1';
-      bFirstScan.style.borderColor = 'rgba(34, 197, 94, 0.8)';
-      bFirstScan.style.boxShadow = '0 0 10px rgba(34, 197, 94, 0.25)';
-    } else {
-      bFirstScan.style.opacity = '0.35';
-      bFirstScan.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-      bFirstScan.style.boxShadow = 'none';
-    }
-  }
-
-  // 2. Food Saver: Unlocks if user has at least 30 XP
-  const bFood = document.getElementById('badge-food-saver');
-  if (bFood) {
-    if (xp >= 30) {
-      bFood.style.opacity = '1';
-      bFood.style.borderColor = 'rgba(245, 158, 11, 0.8)';
-      bFood.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.25)';
-    } else {
-      bFood.style.opacity = '0.35';
-      bFood.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-      bFood.style.boxShadow = 'none';
-    }
-  }
-
-  // 3. Reporter: Unlocks if user has at least 50 XP
-  const bReporter = document.getElementById('badge-reporter');
-  if (bReporter) {
-    if (xp >= 50) {
-      bReporter.style.opacity = '1';
-      bReporter.style.borderColor = 'rgba(59, 130, 246, 0.8)';
-      bReporter.style.boxShadow = '0 0 10px rgba(59, 130, 246, 0.25)';
-    } else {
-      bReporter.style.opacity = '0.35';
-      bReporter.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-      bReporter.style.boxShadow = 'none';
-    }
-  }
-
-  // 4. Streak Master: Unlocks with a 3+ day streak
-  const bStreak = document.getElementById('badge-streak-master');
-  if (bStreak) {
-    if (streak >= 3) {
-      bStreak.style.opacity = '1';
-      bStreak.style.borderColor = 'rgba(239, 68, 68, 0.8)';
-      bStreak.style.boxShadow = '0 0 10px rgba(239, 68, 68, 0.25)';
-    } else {
-      bStreak.style.opacity = '0.35';
-      bStreak.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-      bStreak.style.boxShadow = 'none';
-    }
-  }
-
-  // 5. Waste Warrior: Unlocks at 700+ XP (Level 20)
-  const bWarrior = document.getElementById('badge-waste-warrior');
-  if (bWarrior) {
-    if (xp >= 700) {
-      bWarrior.style.opacity = '1';
-      bWarrior.style.borderColor = 'rgba(168, 85, 247, 0.8)';
-      bWarrior.style.boxShadow = '0 0 10px rgba(168, 85, 247, 0.25)';
-    } else {
-      bWarrior.style.opacity = '0.35';
-      bWarrior.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-      bWarrior.style.boxShadow = 'none';
-    }
-  }
-}
-// WasteHunter Dynamic Level & Rank Tier Progression
-function calculateLevel(xp) {
-  xp = xp || 0;
-  let level = 1;
-  let title = '🍃 Rookie Hunter';
-  let badge = '🛡️';
-  let minXP = 0;
-  let nextXP = 100;
-
-  if (xp >= 3000) {
-    level = 100;
-    title = '👑 Planet Legend';
-    badge = '🏆';
-    minXP = 3000;
-    nextXP = 5000;
-  } else if (xp >= 1500) {
-    level = 50;
-    title = '⭐ Waste Master';
-    badge = '⭐';
-    minXP = 1500;
-    nextXP = 3000;
-  } else if (xp >= 700) {
-    level = 20;
-    title = '⚔️ Waste Warrior';
-    badge = '🛡️';
-    minXP = 700;
-    nextXP = 1500;
-  } else if (xp >= 300) {
-    level = 10;
-    title = '🌿 Eco Hunter';
-    badge = '🛡️';
-    minXP = 300;
-    nextXP = 700;
-  } else if (xp >= 100) {
-    level = 5;
-    title = '🌱 Waste Scout';
-    badge = '🛡️';
-    minXP = 100;
-    nextXP = 300;
-  }
-
-  const range = nextXP - minXP;
-  const currentProgress = xp - minXP;
-  const progressPercent = Math.min(Math.max((currentProgress / range) * 100, 5), 100);
-
-  return { level, title, badge, minXP, nextXP, progressPercent };
-}
-// Determine Streak Tier, Milestone Badges & Icons
-function getStreakBadge(streak) {
-  streak = streak || 0;
-  if (streak >= 30) return { title: '🏆 Planet Legend', icon: '👑', color: '#f59e0b' };
-  if (streak >= 14) return { title: '⭐ Streak Master', icon: '⚡', color: '#a855f7' };
-  if (streak >= 7)  return { title: '⚔️ Waste Warrior', icon: '🔥', color: '#ef4444' };
-  if (streak >= 3)  return { title: '🌿 Eco Hunter', icon: '🎯', color: '#22c55e' };
-  return { title: '🌱 Rookie Hunter', icon: '🍃', color: '#64748b' };
-}
-// Dynamic Dashboard Loader
 async function loadDashboard() {
   try {
     const token = localStorage.getItem('token');
+    if (!token) return;
+
     const res = await fetch('/api/dashboard', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
-    
     const user = data.user || {};
 
-    const xp = user.xp || 0;
-    const streak = user.streak || 0;
-    const multiplier = user.multiplier || 1.0;
-    const wasteKg = parseFloat(user.waste_kg) || 0;
-    const co2Saved = user.co2_kg !== undefined ? user.co2_kg : Math.round(wasteKg * 2.5);
-    const waterSaved = user.water_l ? parseFloat(user.water_l) : Math.round(wasteKg * 120);
+    // 1. Sync fresh user profile data from DB into localStorage
+    let localUser = JSON.parse(localStorage.getItem('user')) || {};
+    localUser = { ...localUser, ...user };
+    localStorage.setItem('user', JSON.stringify(localUser));
+    currentUserData = localUser;
 
-    const lvl = calculateLevel(xp);
-    const badge = getStreakBadge(streak);
-
-    // 1. Update Lifetime Environmental Impact Cards
-    const co2El = document.getElementById('co2Val');
-    const waterEl = document.getElementById('waterVal');
-    const wasteEl = document.getElementById('wasteVal');
-
-    if (co2El) co2El.innerText = co2Saved;
-    if (wasteEl) wasteEl.innerText = wasteKg;
-    if (waterEl) {
-      waterEl.innerText = waterSaved >= 1000 
-        ? `${(waterSaved / 1000).toFixed(1)}k` 
-        : `${waterSaved}`;
-    }
-
-    // 2. Update Numerical Counters
-    if (document.getElementById('currXP')) document.getElementById('currXP').innerText = xp;
-    if (document.getElementById('maxXP')) document.getElementById('maxXP').innerText = lvl.nextXP;
-    if (document.getElementById('modalUserXp')) document.getElementById('modalUserXp').innerText = `${xp} XP`;
-    if (document.getElementById('leaderboardXP')) document.getElementById('leaderboardXP').innerText = `${xp} XP`;
-
-    // 3. Update Streak and Badges
-    if (document.getElementById('streakCount')) document.getElementById('streakCount').innerText = streak;
-    if (document.getElementById('modalStreak')) document.getElementById('modalStreak').innerText = `${badge.icon} ${streak} Days (${badge.title})`;
-
-    // 4. Show Multiplier Boost if streak >= 3
-    const boostEl = document.getElementById('streakBoostBadge');
-    if (boostEl) {
-      if (multiplier > 1.0) {
-        boostEl.style.display = 'inline-block';
-        boostEl.innerText = `🔥 ${multiplier}x XP Boost Active!`;
-      } else {
-        boostEl.style.display = 'none';
-      }
-    }
-
-    // 5. Dynamic Progress Bar & Level Titles
-    if (document.getElementById('levelTitle')) document.getElementById('levelTitle').innerText = `Level ${lvl.level} - ${lvl.title}`;
-    if (document.getElementById('sidebarRank')) document.getElementById('sidebarRank').innerText = lvl.title;
-    if (document.getElementById('modalRankLabel')) document.getElementById('modalRankLabel').innerText = lvl.title;
-    
-    const xpBar = document.getElementById('xpBar');
-    if (xpBar) {
-      xpBar.style.width = `${lvl.progressPercent}%`;
-    }
-    // 6. Sync Daily Quests state with DB
-    if (data.quests) {
-      renderQuests(data.quests);
-    }
-    // Sync Leaderboard ranking
-    if (typeof loadLeaderboard === 'function') {
-      loadLeaderboard();
-    }
-    renderStreakChain(data.user?.streak || 0);
-    updateBadges(data.user);
+    // 2. Refresh the Hero UI, Streak Chain, Badges, and Leaderboard
+    updateHeroUI();
+    if (typeof loadLeaderboard === 'function') loadLeaderboard();
 
   } catch (err) {
-    console.error('Profile load error:', err);
+    console.error('Dashboard load error:', err);
   }
-}
-
-// Function to sync quest buttons with database state
-function renderQuests(quests) {
-  if (!quests || !Array.isArray(quests)) return;
-
-  quests.forEach(q => {
-    const btn = document.querySelector(`[data-quest-id="${q.id}"]`) || document.getElementById(`quest-btn-${q.id}`);
-    if (btn) {
-      if (q.completed === 1) {
-        btn.disabled = true;
-        btn.innerText = '✅ Claimed!';
-        btn.style.background = '#334155';
-        btn.style.color = '#94a3b8';
-        btn.style.cursor = 'default';
-        btn.style.opacity = '0.7';
-      } else {
-        btn.disabled = false;
-        btn.innerText = `+${q.xp_reward} XP`;
-        btn.style.background = '';
-        btn.style.color = '';
-        btn.style.cursor = 'pointer';
-        btn.style.opacity = '1';
-      }
-    }
-  });
 }
 
 // Load live dynamic leaderboard ranking with levels
@@ -1511,34 +1250,6 @@ async function loadLeaderboard() {
   }
 }
 
-// Updated loadDashboard to tie all stats, levels, and streak together
-// Dynamic Level & Progress Calculation
-function calculateLevel(xp) {
-  let level = 1;
-  let title = '🌱 Eco Rookie';
-  let minXP = 0;
-  let nextXP = 100;
-
-  if (xp >= 500) {
-    level = 4;
-    title = '👑 Zero-Waste Legend';
-    minXP = 500;
-    nextXP = 1000;
-  } else if (xp >= 250) {
-    level = 3;
-    title = '🛡️ Neighborhood Guardian';
-    minXP = 250;
-    nextXP = 500;
-  } else if (xp >= 100) {
-    level = 2;
-    title = '🌿 Waste Warrior';
-    minXP = 100;
-    nextXP = 250;
-  }
-
-  const progressPercent = Math.min(100, Math.max(0, Math.round(((xp - minXP) / (nextXP - minXP)) * 100)));
-  return { level, title, minXP, nextXP, progressPercent };
-}
 // Drag & Drop Listeners Setup
 function initDropZone() {
   const dropArea = document.getElementById('unifiedDropzone');
@@ -1679,9 +1390,7 @@ window.startCamera = async function(type) {
       }
     }
 
-    // --- Navigation & Tab Switching ---
-   function switchTab(tabId) {
-  // Map shortcuts to tab container IDs
+function switchTab(tabId) {
   const tabMap = {
     'dashboard': 'tab-dashboard',
     'scanner': 'tab-waste-scanner',
@@ -1690,26 +1399,22 @@ window.startCamera = async function(type) {
     'food-rescue': 'tab-food-rescue',
     'reports': 'tab-waste-reports',
     'waste-reports': 'tab-waste-reports',
-    'challenges': 'tab-challenges',
     'leaderboard': 'tab-leaderboard'
   };
 
   const targetId = tabMap[tabId] || `tab-${tabId}`;
 
-  // Hide all tab-views
   document.querySelectorAll('.tab-view').forEach(el => {
     el.classList.remove('active-view');
     el.style.display = 'none';
   });
 
-  // Show the selected tab
   const targetTab = document.getElementById(targetId);
   if (targetTab) {
     targetTab.classList.add('active-view');
     targetTab.style.display = 'block';
   }
 
-  // Update active sidebar indicator
   const navItems = document.querySelectorAll('.nav-links .nav-item');
   const tabIndexMap = {
     'dashboard': 0,
@@ -1719,8 +1424,7 @@ window.startCamera = async function(type) {
     'food-rescue': 2,
     'reports': 3,
     'waste-reports': 3,
-    'challenges': 4,
-    'leaderboard': 5
+    'leaderboard': 4
   };
 
   navItems.forEach(el => el.classList.remove('active'));
@@ -1729,15 +1433,10 @@ window.startCamera = async function(type) {
     navItems[activeIdx].classList.add('active');
   }
 
- // Leaflet map initialization & resize trigger
   if (tabId === 'reports' || tabId === 'waste-reports') {
     setTimeout(() => {
-      if (typeof initMap === 'function') {
-        initMap();
-      }
-      if (typeof map !== 'undefined' && map) {
-        map.invalidateSize();
-      }
+      if (typeof initMap === 'function') initMap();
+      if (typeof map !== 'undefined' && map) map.invalidateSize();
     }, 150);
   }
 }
@@ -1827,7 +1526,7 @@ window.startCamera = async function(type) {
 
     if (data && !data.error) {
       // 2. Award +25 Hunter XP & refresh UI
-      addHunterXP(25);
+      if (data.user) applyServerProfileUpdate(data.user);
 
       // 3. Keep button grayed out & marked as claimed
       classifyButtons.forEach(btn => {
@@ -1976,7 +1675,7 @@ async function requestRecipe(payload) {
 
     if (data && !data.error) {
       // 2. Award +30 XP
-      addHunterXP(30);
+      if (data.user) applyServerProfileUpdate(data.user);
 
       // 3. Mark button as completed & disabled (gray)
       if (recipeBtn) {
@@ -2066,84 +1765,160 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Leaflet Map & Reporting ---
-    async function loadSavedPins() {
-      try {
-        const res = await fetch('/api/reports');
-        const reports = await res.json();
-        reports.forEach(r => {
-          L.marker([r.lat, r.lng])
-            .addTo(map)
-            .bindPopup(`<b>⚠️ Waste Report</b><br>${r.description}<br><small>${r.location || ''}</small>`);
-        });
-      } catch (e) {
-        console.log('Saved pins offline');
+// ==================== MAP & REPORTING SYSTEM ====================
+let map = null;
+let tempMarker = null;
+let currentSelectedCoords = null;
+let lastLoadedCity = null;
+let userCityCoords = null;
+let savedPinsLayerGroup = null;
+
+async function initMap() {
+  const userStr = localStorage.getItem('user');
+  let currentCity = null;
+  if (userStr) {
+    try {
+      currentCity = JSON.parse(userStr).city;
+    } catch (e) {}
+  }
+
+  // 1. Fetch city coordinates if not already cached or if city changed
+  if (currentCity && (!userCityCoords || lastLoadedCity !== currentCity)) {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(currentCity)}`);
+      const geodata = await res.json();
+      if (geodata && geodata.length > 0) {
+        userCityCoords = [parseFloat(geodata[0].lat), parseFloat(geodata[0].lon)];
       }
+    } catch (e) {
+      console.warn('Error fetching city coordinates:', e);
     }
+    lastLoadedCity = currentCity;
+  }
 
-    async function initMap() {
-      if (!map) {
-        // 1. Set default coordinates (Delhi) as a fallback
-        let defaultLat = 28.6139;
-        let defaultLng = 77.2090;
+  const targetCenter = userCityCoords || [28.6139, 77.2090];
 
-        // 2. Try to get the user's city and fetch its exact coordinates
-        try {
-          const userStr = localStorage.getItem('user');
-          if (userStr) {
-            const user = JSON.parse(userStr);
-            if (user.city) {
-              // Call the free OpenStreetMap API to find the city's GPS coordinates
-              const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(user.city)}`);
-              const geodata = await res.json();
-              
-              if (geodata && geodata.length > 0) {
-                defaultLat = parseFloat(geodata[0].lat);
-                defaultLng = parseFloat(geodata[0].lon);
-              }
-            }
-          }
-        } catch (e) {
-          console.log('Could not load user city coordinates, using fallback.', e);
-        }
+  // 2. Initialize map instance if not created
+  if (!map) {
+    map = L.map('map').setView(targetCenter, 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
-        // 3. Initialize the map with the smart coordinates
-        map = L.map('map').setView([defaultLat, defaultLng], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-        loadSavedPins();
+    savedPinsLayerGroup = L.layerGroup().addTo(map);
 
-        map.on('click', (e) => {
-          currentSelectedCoords = e.latlng;
-          if (tempMarker) tempMarker.setLatLng(e.latlng);
-          else tempMarker = L.marker(e.latlng).addTo(map);
-          document.getElementById('reportLocation').value = `GPS Pin: Lat ${e.latlng.lat.toFixed(4)}, Lng ${e.latlng.lng.toFixed(4)}`;
-
-          // Re-enable report button for the new pin
-          const reportBtn = document.querySelector('#tab-reports button[onclick*="submitReport"], #submitReportBtn, .report-submit-btn');
-          if (reportBtn && reportBtn.disabled) {
-            reportBtn.disabled = false;
-            reportBtn.style.background = 'var(--accent-emerald, #22c55e)';
-            reportBtn.style.color = '#000';
-            reportBtn.style.border = 'none';
-            reportBtn.style.cursor = 'pointer';
-            reportBtn.innerHTML = '📍 Submit Waste Report (+50 XP)';
-          }
-        });
+    map.on('click', (e) => {
+      currentSelectedCoords = e.latlng;
+      if (tempMarker) {
+        tempMarker.setLatLng(e.latlng);
       } else {
-        map.invalidateSize();
+        tempMarker = L.marker(e.latlng).addTo(map);
       }
+      const locInput = document.getElementById('reportLocation');
+      if (locInput) {
+        locInput.value = `GPS Pin: Lat ${e.latlng.lat.toFixed(4)}, Lng ${e.latlng.lng.toFixed(4)}`;
+      }
+    });
+  } else {
+    // Re-center map to the user's city when switching back to tab
+    map.setView(targetCenter, 13);
+  }
+
+  map.invalidateSize();
+  loadSavedPins();
+}
+
+async function loadSavedPins() {
+  if (!map) return;
+
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/reports', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const reports = await res.json();
+    
+    if (!Array.isArray(reports)) return;
+
+    if (!savedPinsLayerGroup) {
+      savedPinsLayerGroup = L.layerGroup().addTo(map);
+    } else {
+      savedPinsLayerGroup.clearLayers();
     }
 
-    async function submitReport() {
+    reports.forEach(r => {
+      const popupContent = `
+        <div style="font-family:sans-serif; min-width:180px;">
+          <b style="color:#ef4444;">⚠️ Waste Hotspot</b><br>
+          <div style="font-size:12px; margin:4px 0;">${r.description}</div>
+          <small style="color:#64748b;">${r.location || ''}</small><br>
+          <button onclick="markWasteCleaned(${r.id})" style="margin-top:8px; width:100%; padding:6px 10px; background:#22c55e; color:#000; font-weight:800; border:none; border-radius:6px; cursor:pointer;">
+            🧹 Mark Cleaned (+40 XP)
+          </button>
+        </div>
+      `;
+
+      L.marker([r.lat, r.lng])
+        .addTo(savedPinsLayerGroup)
+        .bindPopup(popupContent);
+    });
+  } catch (e) {
+    console.error('Error loading pins:', e);
+  }
+}
+
+async function markWasteCleaned(reportId) {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please log in first.');
+      return;
+    }
+
+    const res = await fetch(`/api/reports/${reportId}/clean`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      alert(data.error || 'Failed to update status');
+      return;
+    }
+
+    // 1. Update user profile XP & level
+    if (data.user) {
+      applyServerProfileUpdate(data.user);
+    }
+
+    // 2. XP Gain Toast
+    if (typeof showXpGainToast === 'function') {
+      showXpGainToast('+40 XP! 🧹 Waste Cleaned');
+    }
+
+    // 3. Clear popup and refresh active pending markers
+    if (map) {
+      map.closePopup();
+      loadSavedPins();
+    }
+  } catch (err) {
+    console.error('Error marking waste cleaned:', err);
+    alert('Network error while updating status');
+  }
+}
+
+async function submitReport() {
   const loc = document.getElementById('reportLocation').value;
   const desc = document.getElementById('reportDesc').value;
   const statusBox = document.getElementById('reportResult');
-  const reportBtn = document.querySelector('#tab-reports button[onclick*="submitReport"], #submitReportBtn, .report-submit-btn');
+  const reportBtn = document.querySelector('#tab-waste-reports button[onclick*="submitReport"], #submitReportBtn');
 
-  if (!currentSelectedCoords || !desc) {
-    return alert('Please click on the map to pick a location and enter a description.');
+  if (!currentSelectedCoords || !desc.trim()) {
+    return alert('Please click on the map to pick a location and enter an issue description.');
   }
 
-  // 1. Immediately disable button & turn gray
   if (reportBtn) {
     reportBtn.disabled = true;
     reportBtn.style.background = '#334155';
@@ -2152,9 +1927,11 @@ document.addEventListener('DOMContentLoaded', () => {
     reportBtn.innerHTML = '⏳ Pinning Hotspot to Community Map...';
   }
 
-  statusBox.style.display = 'block';
-  statusBox.className = 'ai-output';
-  statusBox.innerHTML = '📍 <i>Analyzing hotspot & generating official municipal complaint...</i>';
+  if (statusBox) {
+    statusBox.style.display = 'block';
+    statusBox.className = 'ai-output';
+    statusBox.innerHTML = '📍 <i>Analyzing hotspot & generating official municipal complaint...</i>';
+  }
 
   try {
     const token = localStorage.getItem('token');
@@ -2175,63 +1952,66 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
-    // 2. Award +50 XP & refresh UI
-    addHunterXP(50);
-
-    // 3. Keep button grayed out & mark claimed
-    if (reportBtn) {
-      reportBtn.disabled = true;
-      reportBtn.style.background = '#1e293b';
-      reportBtn.style.color = '#64748b';
-      reportBtn.style.border = '1px solid #334155';
-      reportBtn.style.cursor = 'not-allowed';
-      reportBtn.innerHTML = '✓ Hotspot Reported (+50 XP Claimed)';
-    }
-
-    // 4. Show toast notification & complete challenge c3
-    if (typeof showXpGainToast === 'function') {
-      showXpGainToast('+50 XP Earned! 📍 Hotspot Pinned');
-    }
-    if (typeof checkAndCompleteDailyChallenge === 'function') {
-      checkAndCompleteDailyChallenge('c3');
-    }
-
-    const shareText = encodeURIComponent(`🚨 Civic Sanitation Report:\n${data.complaintDraft}\n📍 Location: https://maps.google.com/?q=${currentSelectedCoords.lat},${currentSelectedCoords.lng}`);
-    const waUrl = `https://api.whatsapp.com/send?text=${shareText}`;
-    const xUrl = `https://twitter.com/intent/tweet?text=${shareText}`;
-
-    statusBox.innerHTML = `
-      <div class="report-success-card">
-        <div style="font-size: 13px; color: var(--accent-emerald); font-weight: 800;">
-          ✅ Hotspot Logged on Map (+50 XP)
-        </div>
-        <div style="font-size: 14px; margin-top: 6px;">
-          <b>Severity Tag:</b> <span style="color: var(--accent-amber);">${data.severity || 'Medium'}</span>
-        </div>
-        <div style="background: var(--bg-surface); padding: 12px; border-radius: 8px; font-size: 13px; line-height: 1.4; margin: 10px 0;">
-          <b>Generated Municipal Draft:</b><br/>
-          "${data.complaintDraft}"
-        </div>
-        <div class="share-btn-group">
-          <a href="${waUrl}" target="_blank" class="btn-whatsapp">📲 Send on WhatsApp</a>
-          <a href="${xUrl}" target="_blank" class="btn-twitter">🐦 Tweet Authorities</a>
-        </div>
-      </div>
-    `;
-
-    loadSavedPins();
-    if (typeof loadDashboard === 'function') loadDashboard();
-
-  } catch (err) {
-    statusBox.className = 'ai-output';
-    statusBox.innerText = 'Error: ' + err.message;
+    if (data.user) applyServerProfileUpdate(data.user);
 
     if (reportBtn) {
       reportBtn.disabled = false;
-      reportBtn.style.background = 'var(--accent-emerald, #22c55e)';
-      reportBtn.style.color = '#000';
+      reportBtn.style.background = '#3b82f6';
+      reportBtn.style.color = '#fff';
       reportBtn.style.cursor = 'pointer';
-      reportBtn.innerHTML = '📍 Submit Waste Report (+50 XP)';
+      reportBtn.innerHTML = '🚀 Submit & Generate Complaint (+50 XP)';
+    }
+
+    if (typeof showXpGainToast === 'function') {
+      showXpGainToast('+50 XP Earned! 📍 Hotspot Pinned');
+    }
+
+    // Clean up temporary marker and input fields
+    if (tempMarker && map) {
+      map.removeLayer(tempMarker);
+      tempMarker = null;
+    }
+    currentSelectedCoords = null;
+    document.getElementById('reportLocation').value = '';
+    document.getElementById('reportDesc').value = '';
+
+    const shareText = encodeURIComponent(`🚨 Civic Sanitation Report:\n${data.complaintDraft}\n📍 Location: https://maps.google.com/?q=${data.lat},${data.lng}`);
+    const waUrl = `https://api.whatsapp.com/send?text=${shareText}`;
+    const xUrl = `https://twitter.com/intent/tweet?text=${shareText}`;
+
+    if (statusBox) {
+      statusBox.innerHTML = `
+        <div class="report-success-card">
+          <div style="font-size: 13px; color: var(--accent-emerald); font-weight: 800;">
+            ✅ Hotspot Logged on Map (+50 XP)
+          </div>
+          <div style="font-size: 14px; margin-top: 6px;">
+            <b>Severity Tag:</b> <span style="color: var(--accent-amber);">${data.severity || 'Medium'}</span>
+          </div>
+          <div style="background: var(--bg-surface); padding: 12px; border-radius: 8px; font-size: 13px; line-height: 1.4; margin: 10px 0;">
+            <b>Generated Municipal Draft:</b><br/>
+            "${data.complaintDraft}"
+          </div>
+          <div class="share-btn-group">
+            <a href="${waUrl}" target="_blank" class="btn-whatsapp">📲 Send on WhatsApp</a>
+            <a href="${xUrl}" target="_blank" class="btn-twitter">🐦 Tweet Authorities</a>
+          </div>
+        </div>
+      `;
+    }
+
+    loadSavedPins();
+  } catch (err) {
+    if (statusBox) {
+      statusBox.className = 'ai-output';
+      statusBox.innerText = 'Error: ' + err.message;
+    }
+    if (reportBtn) {
+      reportBtn.disabled = false;
+      reportBtn.style.background = '#3b82f6';
+      reportBtn.style.color = '#fff';
+      reportBtn.style.cursor = 'pointer';
+      reportBtn.innerHTML = '🚀 Submit & Generate Complaint (+50 XP)';
     }
   }
 }
@@ -2242,35 +2022,39 @@ window.addEventListener('DOMContentLoaded', () => {
   loadLeaderboard();
 });
   
-  // --- Mobile Sidebar Toggle Logic ---
+// --- Mobile Sidebar & Backdrop Toggle Logic ---
 document.addEventListener('DOMContentLoaded', () => {
   const mobileBtn = document.getElementById('mobileMenuBtn');
   const sidebar = document.querySelector('.sidebar') || document.querySelector('aside');
-  const navLinks = document.querySelectorAll('.sidebar a, aside a, .nav-item');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const navLinks = document.querySelectorAll('.nav-item, .sidebar a, aside a');
+
+  function toggleSidebar(open) {
+    const isOpen = open !== undefined ? open : !sidebar.classList.contains('active');
+    sidebar.classList.toggle('active', isOpen);
+    if (backdrop) backdrop.style.display = isOpen ? 'block' : 'none';
+    if (mobileBtn) mobileBtn.innerHTML = isOpen ? '✕' : '☰';
+  }
 
   if (mobileBtn && sidebar) {
-    // Open/Close menu when hamburger is clicked
-    mobileBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('active');
-      // Optional: change icon to an X when open
-      if(sidebar.classList.contains('active')) {
-        mobileBtn.innerHTML = '✕';
-      } else {
-        mobileBtn.innerHTML = '☰';
-      }
-    });
+    // Toggle when hamburger button is clicked
+    mobileBtn.addEventListener('click', () => toggleSidebar());
 
-    // Auto-close menu when a navigation link is clicked (better mobile UX)
+    // Close when tapping outside on the dark backdrop
+    if (backdrop) {
+      backdrop.addEventListener('click', () => toggleSidebar(false));
+    }
+
+    // Close when any navigation link is clicked
     navLinks.forEach(link => {
       link.addEventListener('click', () => {
-        if (window.innerWidth <= 768) {
-          sidebar.classList.remove('active');
-          mobileBtn.innerHTML = '☰';
-        }
+        if (window.innerWidth <= 768) toggleSidebar(false);
       });
     });
   }
 });
 </script>
+<!-- Mobile Drawer Backdrop -->
+<div id="sidebarBackdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9998;"></div>
 </body>
 </html>

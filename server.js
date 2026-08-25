@@ -38,7 +38,7 @@ async function initDB() {
         streak INTEGER DEFAULT 0,
         xp INTEGER DEFAULT 0,
         xp_max INTEGER DEFAULT 100,
-        level TEXT DEFAULT 'Level 1 - 🌱 Eco Rookie',
+        level TEXT DEFAULT 'Level 1 - Rookie Hunter',
         co2_kg INTEGER DEFAULT 0,
         water_l TEXT DEFAULT '0',
         waste_kg INTEGER DEFAULT 0,
@@ -49,43 +49,46 @@ async function initDB() {
     // Safe initial seed for user
     await pool.query(`
       INSERT INTO profile (id, name, streak, xp, xp_max, level, co2_kg, water_l, waste_kg, last_active_date)
-      VALUES (1, 'Nikhil', 0, 0, 100, 'Level 1 - 🌱 Eco Rookie', 0, '0', 0, '')
-      ON CONFLICT (id) DO NOTHING;
-    `);
-
-    // 2. Quests Table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS quests (
-        id SERIAL PRIMARY KEY,
-        title TEXT,
-        xp_reward INTEGER,
-        completed INTEGER DEFAULT 0,
-        last_completed_date TEXT DEFAULT ''
-      );
-    `);
-
-    // Safe seed for initial quests
-    await pool.query(`
-      INSERT INTO quests (id, title, xp_reward, completed, last_completed_date)
-      VALUES 
-        (1, 'Brought a Reusable Bag', 15, 0, ''),
-        (2, 'Zero Leftover Meal', 20, 0, ''),
-        (3, 'Walk / Cycle Short Trips', 25, 0, '')
+      VALUES (1, 'Nikhil', 0, 0, 100, 'Level 1 - Rookie Hunter', 0, '0', 0, '')
       ON CONFLICT (id) DO NOTHING;
     `);
 
     // 3. Reports Table
     await pool.query(`
+  CREATE TABLE IF NOT EXISTS reports (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER,
+    city TEXT,
+    lat REAL,
+    lng REAL,
+    location TEXT,
+    description TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+    // 3. Reports Table
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS reports (
         id SERIAL PRIMARY KEY,
+        user_id INTEGER,
+        city TEXT,
         lat REAL,
         lng REAL,
         location TEXT,
         description TEXT,
+        status TEXT DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
+    // Ensure columns exist on legacy tables
+    await pool.query(`
+      ALTER TABLE reports ADD COLUMN IF NOT EXISTS user_id INTEGER;
+      ALTER TABLE reports ADD COLUMN IF NOT EXISTS city TEXT;
+      ALTER TABLE reports ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
+      ALTER TABLE reports ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    `);
     // 4. Leaderboard Table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS leaderboard (
@@ -147,10 +150,10 @@ app.post('/api/auth/signup', async (req, res) => {
     const userId = result.rows[0].id;
 
     // Initialize blank profile for the new user
-    await pool.query(`
-      INSERT INTO profile (id, name, streak, xp, xp_max, level, co2_kg, water_l, waste_kg, last_active_date)
-      VALUES ($1, $2, 0, 0, 100, 'Level 1 - 🌱 Eco Rookie', 0, '0', 0, '')
-    `, [userId, name.trim()]);
+   await pool.query(`
+  INSERT INTO profile (id, name, streak, xp, xp_max, level, co2_kg, water_l, waste_kg, last_active_date)
+  VALUES ($1, $2, 0, 0, 600, 'Level 1 - Rookie Hunter', 0, '0', 0, '')
+`, [userId, name.trim()]);
     const token = generateToken({ id: userId, email: email.trim(), name: name.trim() });
 
     res.status(201).json({
@@ -191,6 +194,10 @@ app.post('/api/auth/signin', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    // Fetch user profile stats (xp, streak, etc.)
+    const profileRes = await pool.query('SELECT * FROM profile WHERE id = $1', [user.id]);
+    const profile = profileRes.rows[0] || {};
+
     const token = generateToken({ id: user.id, email: user.email, name: user.name });
 
     res.json({
@@ -201,7 +208,12 @@ app.post('/api/auth/signin', async (req, res) => {
         name: user.name,
         email: user.email,
         city: user.city,
-        created_at: user.created_at
+        created_at: user.created_at,
+        xp: profile.xp || 0,
+        streak: profile.streak || 0,
+        co2_kg: profile.co2_kg || 0,
+        waste_kg: profile.waste_kg || 0,
+        water_l: profile.water_l || '0'
       }
     });
   } catch (error) {
@@ -331,7 +343,6 @@ function evaluateStreak(profile) {
   return { streak: currentStreak, multiplier, diffDays };
 }
 
-// Helper to safely add XP and calculate new streaks
 async function addXpAndUpdateStreak(userId, xpToAdd, wasteKg = 0, co2Kg = 0, waterL = 0) {
   const profileRes = await pool.query('SELECT streak, last_active_date FROM profile WHERE id = $1', [userId]);
   const profile = profileRes.rows[0];
@@ -340,17 +351,15 @@ async function addXpAndUpdateStreak(userId, xpToAdd, wasteKg = 0, co2Kg = 0, wat
   let newStreak = streakData.streak;
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Calculate if the streak should increase
   if (!profile?.last_active_date) {
     newStreak = 1;
   } else if (streakData.diffDays === 1) {
-    newStreak += 1; // Logged in yesterday, streak goes up!
+    newStreak += 1;
   } else if (streakData.diffDays > 1) {
-    newStreak = 1; // Missed a day, streak resets
+    newStreak = 1;
   }
-  // If diffDays === 0, newStreak stays the same (they already increased it today)
 
-  await pool.query(
+  const updatedRes = await pool.query(
     `UPDATE profile 
      SET xp = xp + $1, 
          waste_kg = waste_kg + $2, 
@@ -358,102 +367,77 @@ async function addXpAndUpdateStreak(userId, xpToAdd, wasteKg = 0, co2Kg = 0, wat
          water_l = CAST(COALESCE(NULLIF(water_l, ''), '0') AS INTEGER) + $4,
          streak = $5,
          last_active_date = $6
-     WHERE id = $7`,
+     WHERE id = $7
+     RETURNING *`,
      [xpToAdd, wasteKg, co2Kg, waterL, newStreak, todayStr, userId]
   );
+
+  return updatedRes.rows[0];
 }
 
 app.get('/api/dashboard', authMiddleware, async (req, res) => {
   try {
-    const todayStr = new Date().toISOString().split('T')[0];
-    await pool.query('UPDATE quests SET completed = 0 WHERE last_completed_date != $1', [todayStr]);
-
-    // Use req.user.id from the auth middleware
     const profileRes = await pool.query('SELECT * FROM profile WHERE id = $1', [req.user.id]);
     const user = profileRes.rows[0];
 
+    if (!user) return res.status(404).json({ error: 'User profile not found' });
+
     const streakData = evaluateStreak(user);
 
-    if (streakData.streak !== user?.streak) {
+    if (streakData.streak !== user.streak) {
       await pool.query('UPDATE profile SET streak = $1 WHERE id = $2', [streakData.streak, req.user.id]);
+      user.streak = streakData.streak;
     }
 
-    const questsRes = await pool.query('SELECT * FROM quests ORDER BY id ASC');
-    res.json({ user: { ...user, streak: streakData.streak, multiplier: streakData.multiplier }, quests: questsRes.rows });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Claim Quest
-app.post('/api/quests/toggle', authMiddleware, async (req, res) => {
-  try {
-    const { questId, completed } = req.body;
-    const isDone = completed ? 1 : 0;
-    const todayStr = new Date().toISOString().split('T')[0];
-
-    const questRes = await pool.query('SELECT xp_reward, completed FROM quests WHERE id = $1', [questId]);
-    const quest = questRes.rows[0];
-
-    if (isDone && quest && quest.completed === 1) {
-      return res.status(400).json({ error: 'Quest already claimed for today!' });
-    }
-
-    const rawXp = quest ? quest.xp_reward : (parseInt(req.body.xp, 10) || 15);
-
-    // Replaced id = 1 with req.user.id
-    const profileRes = await pool.query('SELECT xp, streak, last_active_date FROM profile WHERE id = $1', [req.user.id]);
-    const profile = profileRes.rows[0];
-
-    const streakData = evaluateStreak(profile);
-    let newStreak = streakData.streak;
-
-    if (isDone) {
-      if (!profile?.last_active_date) {
-        newStreak = 1;
-      } else if (streakData.diffDays === 1) {
-        newStreak += 1;
-      } else if (streakData.diffDays > 1) {
-        newStreak = 1;
+    res.json({
+      user: {
+        ...user,
+        streak: streakData.streak,
+        multiplier: streakData.multiplier
       }
-    }
-
-    const earnedXp = Math.round(rawXp * streakData.multiplier);
-    const xpChange = isDone ? earnedXp : -earnedXp;
-
-    // Replaced id = 1 with req.user.id
-   await addXpAndUpdateStreak(req.user.id, xpReward);
-
-    await pool.query(
-      'UPDATE quests SET completed = $1, last_completed_date = $2 WHERE id = $3',
-      [isDone, isDone ? todayStr : '', questId]
-    );
-
-    // Replaced id = 1 with req.user.id
-    const updatedUserRes = await pool.query('SELECT * FROM profile WHERE id = $1', [req.user.id]);
-    res.json({ success: true, user: updatedUserRes.rows[0], earnedXp, multiplier: streakData.multiplier });
-
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.get('/api/reports', async (req, res) => {
+// Get Active Hotspot Reports (Last 24 hours, Not Cleaned)
+app.get('/api/reports', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM reports ORDER BY id DESC');
+    // 1. Ensure the status column exists
+    await pool.query(`
+      ALTER TABLE reports ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
+    `);
+
+    // 2. Query pending or newly created (NULL status) reports within 24 hours
+    const query = `
+      SELECT * FROM reports 
+      WHERE (status IS NULL OR status = 'pending' OR status != 'cleaned')
+        AND created_at >= NOW() - INTERVAL '24 HOURS'
+      ORDER BY id DESC
+    `;
+    const result = await pool.query(query);
     res.json(result.rows);
   } catch (err) {
+    console.error('Fetch reports error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-/// AI Waste Report
+// Submit AI Waste Report
+// AI Waste Report
 app.post('/api/reports', authMiddleware, async (req, res) => {
   try {
     const { lat, lng, location, description, imageBase64 } = req.body;
     if (!lat || !lng) {
       return res.status(400).json({ error: 'Missing location coordinates.' });
     }
+
+    // Auto-migrate columns if missing
+    await pool.query(`
+      ALTER TABLE reports ADD COLUMN IF NOT EXISTS user_id INTEGER;
+      ALTER TABLE reports ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
+    `);
 
     let severity = "Moderate Waste";
     let complaintDraft = `Official Waste Clearance Request:\nLocation: ${location || 'Coordinates ' + lat + ', ' + lng}\nDetails: ${description || 'Illegal garbage accumulation reported.'}\nPlease act immediately.`;
@@ -471,30 +455,70 @@ Return ONLY valid JSON.`;
         parts.push({ inlineData: { data: imageBase64, mimeType: "image/jpeg" } });
       }
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: parts.map(p => typeof p === 'string' ? { text: p } : p) }],
-      generationConfig: { responseMimeType: "application/json" }
-    });
-    const response = await result.response;
-    
-    const parsed = JSON.parse(response.text());
-      severity = parsed.severity || severity;
-      complaintDraft = parsed.complaint_draft || complaintDraft;
+      try {
+        const result = await model.generateContent({
+          contents: [{ role: "user", parts: parts.map(p => typeof p === 'string' ? { text: p } : p) }],
+          generationConfig: { responseMimeType: "application/json" }
+        });
+        const response = await result.response;
+        const parsed = JSON.parse(response.text());
+        severity = parsed.severity || severity;
+        complaintDraft = parsed.complaint_draft || complaintDraft;
+      } catch (aiErr) {
+        console.warn('Gemini report analysis fallback:', aiErr.message);
+      }
     }
 
     const insertRes = await pool.query(
-      'INSERT INTO reports (lat, lng, location, description) VALUES ($1, $2, $3, $4) RETURNING id',
-      [lat, lng, location || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`, `${severity} - ${description || 'Hotspot reported'}`]
+      `INSERT INTO reports (user_id, lat, lng, location, description, status) 
+       VALUES ($1, $2, $3, $4, $5, 'pending') RETURNING id`,
+      [req.user.id, lat, lng, location || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`, `${severity} - ${description || 'Hotspot reported'}`]
     );
 
-    // Replaced id = 1 with req.user.id
-    await addXpAndUpdateStreak(req.user.id, 30, 3, 8, 300);
+    const updatedProfile = await addXpAndUpdateStreak(req.user.id, 50, 3, 8, 300);
 
-    res.json({ id: insertRes.rows[0].id, success: true, severity, complaintDraft, lat, lng });
+    res.json({ 
+      id: insertRes.rows[0].id, 
+      success: true, 
+      severity, 
+      complaintDraft, 
+      lat, 
+      lng,
+      user: updatedProfile 
+    });
 
   } catch (error) {
     console.error("Report Error:", error);
     res.status(500).json({ error: error.message || 'Failed to submit report' });
+  }
+});
+// Mark Waste as Cleaned (+40 XP)
+app.post('/api/reports/:id/clean', authMiddleware, async (req, res) => {
+  try {
+    const reportId = parseInt(req.params.id, 10);
+    if (!reportId) {
+      return res.status(400).json({ error: 'Invalid report ID' });
+    }
+
+    // 1. Ensure status column exists in PostgreSQL
+    await pool.query(`
+      ALTER TABLE reports ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
+    `);
+
+    // 2. Mark this report as cleaned
+    await pool.query('UPDATE reports SET status = $1 WHERE id = $2', ['cleaned', reportId]);
+
+    // 3. Award +40 XP, +5 kg waste, +12 kg CO2, +400 L water saved
+    const updatedProfile = await addXpAndUpdateStreak(req.user.id, 40, 5, 12, 400);
+
+    res.json({
+      success: true,
+      message: 'Waste marked as cleaned!',
+      user: updatedProfile
+    });
+  } catch (err) {
+    console.error('Clean report error:', err);
+    res.status(500).json({ error: err.message || 'Server error marking report cleaned' });
   }
 });
 
@@ -528,10 +552,14 @@ Do not include markdown fences or any other text outside the JSON.`;
     // No more regex replace needed!
     const parsedData = JSON.parse(response.text());
 
-    // Replaced id = 1 with req.user.id
-    await addXpAndUpdateStreak(req.user.id, 25, 1, 3, 120);
+   // Capture the updated profile from the helper function
+const updatedProfile = await addXpAndUpdateStreak(req.user.id, 25, 1, 3, 120);
 
-    res.json(parsedData);
+// Return parsedData along with the updated user profile
+res.json({
+  ...parsedData,
+  user: updatedProfile
+});
   } catch (error) {
     console.error("Waste Scan Error:", error);
     res.status(500).json({ error: error.message || 'Failed to analyze item' });
@@ -579,10 +607,12 @@ Keep steps ultra-simple and focused on saving food from going to waste. Do not i
     
     const parsedRecipe = JSON.parse(response.text());
 
-    // Replaced id = 1 with req.user.id
-    await addXpAndUpdateStreak(req.user.id, 20, 1, 2, 250);
+const updatedProfile = await addXpAndUpdateStreak(req.user.id, 20, 1, 2, 250);
 
-    res.json(parsedRecipe);
+res.json({
+  ...parsedRecipe,
+  user: updatedProfile
+});
   } catch (error) {
     console.error("Food Rescue Error:", error);
     res.status(500).json({ error: error.message || 'Failed to generate recipe' });
@@ -607,62 +637,51 @@ app.post('/api/profile/update', authMiddleware, async (req, res) => {
   }
 });
 
-// Dynamic Leaderboard
+// Real Users Dynamic Leaderboard
 app.get('/api/leaderboard', authMiddleware, async (req, res) => {
   try {
-    // Replaced id = 1 with req.user.id
-    const userRes = await pool.query('SELECT name, xp, streak FROM profile WHERE id = $1', [req.user.id]);
-    const currentUser = userRes.rows[0];
+    const filter = req.query.filter || 'global';
+    const currentUserId = req.user.id;
 
-    const calculateLevelNum = (xp) => {
-      if (xp >= 3000) return 100;
-      if (xp >= 1500) return 50;
-      if (xp >= 700) return 20;
-      if (xp >= 300) return 10;
-      if (xp >= 100) return 5;
-      return 1;
-    };
+    // Fetch user's registered city
+    const userRes = await pool.query('SELECT city FROM users WHERE id = $1', [currentUserId]);
+    const userCity = userRes.rows[0]?.city;
 
-    const userXP = currentUser ? currentUser.xp : 0;
-    const userStreak = currentUser ? currentUser.streak : 0;
-    const userName = currentUser ? currentUser.name : 'Hunter';
+    let queryText = `
+      SELECT 
+        u.id,
+        u.name,
+        u.city,
+        COALESCE(p.xp, 0) AS xp,
+        COALESCE(p.streak, 0) AS streak
+      FROM users u
+      LEFT JOIN profile p ON u.id = p.id
+    `;
+    const params = [];
 
-    const mockHunters = [
-      { name: 'Rahul', xp: 12450, streak: 18, avatar: 'R', level: 24, isCurrent: false },
-      { name: 'Priya', xp: 11800, streak: 15, avatar: 'P', level: 22, isCurrent: false },
-      { name: 'Sameer', xp: 10950, streak: 12, avatar: 'S', level: 20, isCurrent: false },
-      { name: 'Ananya', xp: 9750, streak: 9, avatar: 'A', level: 18, isCurrent: false },
-      { name: 'Arjun', xp: 8600, streak: 7, avatar: 'A', level: 17, isCurrent: false },
-    ];
+    if (filter === 'city' && userCity) {
+      queryText += ` WHERE LOWER(TRIM(u.city)) = LOWER(TRIM($1))`;
+      params.push(userCity);
+    }
 
-    const currentHunter = {
-      name: userName,
-      xp: userXP,
-      streak: userStreak,
-      avatar: userName.charAt(0).toUpperCase(),
-      level: calculateLevelNum(userXP),
-      isCurrent: true
-    };
+    queryText += ` ORDER BY COALESCE(p.xp, 0) DESC, u.id ASC LIMIT 50`;
 
-    const allHunters = [...mockHunters, currentHunter].sort((a, b) => b.xp - a.xp);
-    res.json(allHunters);
+    const result = await pool.query(queryText, params);
 
+    const hunters = result.rows.map((row, index) => ({
+      rank: index + 1,
+      id: row.id,
+      name: row.name,
+      city: row.city,
+      xp: parseInt(row.xp, 10) || 0,
+      streak: parseInt(row.streak, 10) || 0,
+      avatar: (row.name || 'H').charAt(0).toUpperCase(),
+      isCurrent: row.id === currentUserId
+    }));
+
+    res.json(hunters);
   } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Custom Quest Completion
-app.post('/api/profile/quest', authMiddleware, async (req, res) => {
-  try {
-    const xpReward = parseInt(req.body.xp, 10) || 15;
-
-    // Replaced id = 1 with req.user.id
-    await pool.query('UPDATE profile SET xp = xp + $1, streak = streak + 1 WHERE id = $2', [xpReward, req.user.id]);
-    const updatedUser = await pool.query('SELECT * FROM profile WHERE id = $1', [req.user.id]);
-
-    res.json({ success: true, user: updatedUser.rows[0], addedXp: xpReward });
-  } catch (err) {
+    console.error('Leaderboard error:', err);
     res.status(500).json({ error: err.message });
   }
 });
