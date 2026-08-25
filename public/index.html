@@ -1356,9 +1356,13 @@ function getStreakBadge(streak) {
 // Dynamic Dashboard Loader
 async function loadDashboard() {
   try {
-    const res = await fetch('/api/dashboard');
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/dashboard', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     const data = await res.json();
-    const user = data.user || {};
+    // ... rest of the function remains the same
+    // ... rest of the function remains the same
 
     const xp = user.xp || 0;
     const streak = user.streak || 0;
@@ -1461,7 +1465,10 @@ async function loadLeaderboard() {
   if (!container) return;
 
   try {
-    const res = await fetch('/api/leaderboard');
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/leaderboard', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     const users = await res.json();
     if (!Array.isArray(users)) return;
 
@@ -1806,9 +1813,13 @@ window.startCamera = async function(type) {
   }
 
   try {
+    const token = localStorage.getItem('token');
     const res = await fetch('/api/ai/scan-waste', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` 
+      },
       body: JSON.stringify({ imageBase64 })
     });
 
@@ -1951,9 +1962,13 @@ async function requestRecipe(payload) {
   }
 
   try {
+    const token = localStorage.getItem('token'); // Grab the token
     const res = await fetch('/api/ai/food-rescue', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` // Add the Authorization header
+      },
       body: JSON.stringify(payload)
     });
 
@@ -2117,9 +2132,13 @@ document.addEventListener('DOMContentLoaded', () => {
   statusBox.innerHTML = '📍 <i>Analyzing hotspot & generating official municipal complaint...</i>';
 
   try {
+    const token = localStorage.getItem('token');
     const res = await fetch('/api/reports', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({
         lat: currentSelectedCoords.lat,
         lng: currentSelectedCoords.lng,
