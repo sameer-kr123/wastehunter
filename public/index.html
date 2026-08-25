@@ -1797,7 +1797,7 @@ window.startCamera = async function(type) {
   const resultBox = document.getElementById('scannerResult');
   
   // 1. Grab classify buttons & immediately turn gray / disable
-  const classifyButtons = document.querySelectorAll('#tab-waste-scanner button, .classify-btn');
+  const classifyButtons = document.querySelectorAll('#scanUploadBtn');
   classifyButtons.forEach(btn => {
     btn.disabled = true;
     btn.style.background = '#334155';
@@ -1929,7 +1929,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('wastePhotoInput');
   if (fileInput) {
     fileInput.addEventListener('change', () => {
-      const classifyButtons = document.querySelectorAll('#tab-waste-scanner button, .classify-btn');
+      const classifyButtons = document.querySelectorAll('#scanUploadBtn');
       classifyButtons.forEach(btn => {
         btn.disabled = false;
         btn.style.background = 'var(--accent-emerald, #22c55e)';
