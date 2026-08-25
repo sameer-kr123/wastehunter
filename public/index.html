@@ -2080,29 +2080,54 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    function initMap() {
+    async function initMap() {
       if (!map) {
-        map = L.map('map').setView([28.6139, 77.2090], 13);
+        // 1. Set default coordinates (Delhi) as a fallback
+        let defaultLat = 28.6139;
+        let defaultLng = 77.2090;
+
+        // 2. Try to get the user's city and fetch its exact coordinates
+        try {
+          const userStr = localStorage.getItem('user');
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            if (user.city) {
+              // Call the free OpenStreetMap API to find the city's GPS coordinates
+              const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(user.city)}`);
+              const geodata = await res.json();
+              
+              if (geodata && geodata.length > 0) {
+                defaultLat = parseFloat(geodata[0].lat);
+                defaultLng = parseFloat(geodata[0].lon);
+              }
+            }
+          }
+        } catch (e) {
+          console.log('Could not load user city coordinates, using fallback.', e);
+        }
+
+        // 3. Initialize the map with the smart coordinates
+        map = L.map('map').setView([defaultLat, defaultLng], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
         loadSavedPins();
 
         map.on('click', (e) => {
-    currentSelectedCoords = e.latlng;
-    if (tempMarker) tempMarker.setLatLng(e.latlng);
-    else tempMarker = L.marker(e.latlng).addTo(map);
-    document.getElementById('reportLocation').value = `GPS Pin: Lat ${e.latlng.lat.toFixed(4)}, Lng ${e.latlng.lng.toFixed(4)}`;
+          currentSelectedCoords = e.latlng;
+          if (tempMarker) tempMarker.setLatLng(e.latlng);
+          else tempMarker = L.marker(e.latlng).addTo(map);
+          document.getElementById('reportLocation').value = `GPS Pin: Lat ${e.latlng.lat.toFixed(4)}, Lng ${e.latlng.lng.toFixed(4)}`;
 
-    // Re-enable report button for the new pin
-    const reportBtn = document.querySelector('#tab-reports button[onclick*="submitReport"], #submitReportBtn, .report-submit-btn');
-    if (reportBtn && reportBtn.disabled) {
-      reportBtn.disabled = false;
-      reportBtn.style.background = 'var(--accent-emerald, #22c55e)';
-      reportBtn.style.color = '#000';
-      reportBtn.style.border = 'none';
-      reportBtn.style.cursor = 'pointer';
-      reportBtn.innerHTML = '📍 Submit Waste Report (+50 XP)';
-    }
-  });
+          // Re-enable report button for the new pin
+          const reportBtn = document.querySelector('#tab-reports button[onclick*="submitReport"], #submitReportBtn, .report-submit-btn');
+          if (reportBtn && reportBtn.disabled) {
+            reportBtn.disabled = false;
+            reportBtn.style.background = 'var(--accent-emerald, #22c55e)';
+            reportBtn.style.color = '#000';
+            reportBtn.style.border = 'none';
+            reportBtn.style.cursor = 'pointer';
+            reportBtn.innerHTML = '📍 Submit Waste Report (+50 XP)';
+          }
+        });
       } else {
         map.invalidateSize();
       }
