@@ -305,6 +305,35 @@ app.post('/api/auth/change-password', authMiddleware, async (req, res) => {
 
 // ==================== DASHBOARD & QUEST ENDPOINTS ====================
 
+// ==================== DASHBOARD & QUEST ENDPOINTS ====================
+
+function evaluateStreak(profile) {
+  if (!profile || !profile.last_active_date) {
+    return { streak: 0, multiplier: 1.0, diffDays: 999 };
+  }
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const lastDate = new Date(profile.last_active_date);
+  const today = new Date(todayStr);
+  const diffDays = Math.round((today - lastDate) / (1000 * 60 * 60 * 24));
+
+  let currentStreak = profile.streak || 0;
+
+  if (diffDays > 1) {
+    currentStreak = 0;
+  }
+
+  let multiplier = 1.0;
+  if (currentStreak >= 14) multiplier = 2.0;
+  else if (currentStreak >= 7) multiplier = 1.5;
+  else if (currentStreak >= 3) multiplier = 1.2;
+
+  return { streak: currentStreak, multiplier, diffDays };
+}
+
+// Helper to safely add XP and calculate new streaks
+async function addXpAndUpdateStreak(userId, xpToAdd, wasteKg = 0, co2Kg = 0, waterL = 0) {
+// ... rest of your code ...
 // Helper to safely add XP and calculate new streaks
 async function addXpAndUpdateStreak(userId, xpToAdd, wasteKg = 0, co2Kg = 0, waterL = 0) {
   const profileRes = await pool.query('SELECT streak, last_active_date FROM profile WHERE id = $1', [userId]);
