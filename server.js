@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const path = require('path');
 const { Pool } = require('pg');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -19,6 +20,7 @@ const PORT = process.env.PORT || 3000;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
 
+app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 app.use(express.static('public'));
 
