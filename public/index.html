@@ -1361,8 +1361,8 @@ async function loadDashboard() {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
-    // ... rest of the function remains the same
-    // ... rest of the function remains the same
+    
+    const user = data.user || {};
 
     const xp = user.xp || 0;
     const streak = user.streak || 0;
