@@ -688,6 +688,7 @@ app.post('/api/profile/quest', (req, res) => {
 app.get('/dashboard.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
 app.listen(PORT, () => {
-  console.log(`EcoPulse Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
