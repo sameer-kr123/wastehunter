@@ -333,9 +333,6 @@ function evaluateStreak(profile) {
 
 // Helper to safely add XP and calculate new streaks
 async function addXpAndUpdateStreak(userId, xpToAdd, wasteKg = 0, co2Kg = 0, waterL = 0) {
-// ... rest of your code ...
-// Helper to safely add XP and calculate new streaks
-async function addXpAndUpdateStreak(userId, xpToAdd, wasteKg = 0, co2Kg = 0, waterL = 0) {
   const profileRes = await pool.query('SELECT streak, last_active_date FROM profile WHERE id = $1', [userId]);
   const profile = profileRes.rows[0];
   
