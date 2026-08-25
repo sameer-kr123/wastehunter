@@ -243,6 +243,9 @@ app.put('/api/auth/update-profile', authMiddleware, async (req, res) => {
       [name.trim(), city.trim(), email.trim(), userId]
     );
 
+    // ADD THIS: Keep the gamification profile in sync!
+    await pool.query('UPDATE profile SET name = $1 WHERE id = $2', [name.trim(), userId]);
+
     res.json({
       success: true,
       message: 'Profile updated successfully',
@@ -302,28 +305,36 @@ app.post('/api/auth/change-password', authMiddleware, async (req, res) => {
 
 // ==================== DASHBOARD & QUEST ENDPOINTS ====================
 
-function evaluateStreak(profile) {
-  if (!profile || !profile.last_active_date) {
-    return { streak: 0, multiplier: 1.0, diffDays: 999 };
-  }
-
+// Helper to safely add XP and calculate new streaks
+async function addXpAndUpdateStreak(userId, xpToAdd, wasteKg = 0, co2Kg = 0, waterL = 0) {
+  const profileRes = await pool.query('SELECT streak, last_active_date FROM profile WHERE id = $1', [userId]);
+  const profile = profileRes.rows[0];
+  
+  const streakData = evaluateStreak(profile);
+  let newStreak = streakData.streak;
   const todayStr = new Date().toISOString().split('T')[0];
-  const lastDate = new Date(profile.last_active_date);
-  const today = new Date(todayStr);
-  const diffDays = Math.round((today - lastDate) / (1000 * 60 * 60 * 24));
 
-  let currentStreak = profile.streak || 0;
-
-  if (diffDays > 1) {
-    currentStreak = 0;
+  // Calculate if the streak should increase
+  if (!profile?.last_active_date) {
+    newStreak = 1;
+  } else if (streakData.diffDays === 1) {
+    newStreak += 1; // Logged in yesterday, streak goes up!
+  } else if (streakData.diffDays > 1) {
+    newStreak = 1; // Missed a day, streak resets
   }
+  // If diffDays === 0, newStreak stays the same (they already increased it today)
 
-  let multiplier = 1.0;
-  if (currentStreak >= 14) multiplier = 2.0;
-  else if (currentStreak >= 7) multiplier = 1.5;
-  else if (currentStreak >= 3) multiplier = 1.2;
-
-  return { streak: currentStreak, multiplier, diffDays };
+  await pool.query(
+    `UPDATE profile 
+     SET xp = xp + $1, 
+         waste_kg = waste_kg + $2, 
+         co2_kg = co2_kg + $3, 
+         water_l = CAST(COALESCE(NULLIF(water_l, ''), '0') AS INTEGER) + $4,
+         streak = $5,
+         last_active_date = $6
+     WHERE id = $7`,
+     [xpToAdd, wasteKg, co2Kg, waterL, newStreak, todayStr, userId]
+  );
 }
 
 app.get('/api/dashboard', authMiddleware, async (req, res) => {
@@ -385,10 +396,7 @@ app.post('/api/quests/toggle', authMiddleware, async (req, res) => {
     const xpChange = isDone ? earnedXp : -earnedXp;
 
     // Replaced id = 1 with req.user.id
-    await pool.query(
-      'UPDATE profile SET xp = GREATEST(0, xp + $1), streak = $2, last_active_date = $3 WHERE id = $4',
-      [xpChange, newStreak, todayStr, req.user.id]
-    );
+   await addXpAndUpdateStreak(req.user.id, xpReward);
 
     await pool.query(
       'UPDATE quests SET completed = $1, last_completed_date = $2 WHERE id = $3',
@@ -454,13 +462,7 @@ Return ONLY valid JSON.`;
     );
 
     // Replaced id = 1 with req.user.id
-    await pool.query(
-      `UPDATE profile 
-       SET xp = xp + 30, waste_kg = waste_kg + 3, co2_kg = co2_kg + 8, 
-           water_l = CAST(COALESCE(NULLIF(water_l, ''), '0') AS INTEGER) + 300 
-       WHERE id = $1`,
-       [req.user.id]
-    );
+    await addXpAndUpdateStreak(req.user.id, 30, 3, 8, 300);
 
     res.json({ id: insertRes.rows[0].id, success: true, severity, complaintDraft, lat, lng });
 
@@ -501,13 +503,7 @@ Do not include markdown fences or any other text outside the JSON.`;
     const parsedData = JSON.parse(response.text());
 
     // Replaced id = 1 with req.user.id
-    await pool.query(
-      `UPDATE profile 
-       SET xp = xp + 25, waste_kg = waste_kg + 1, co2_kg = co2_kg + 3, 
-           water_l = CAST(COALESCE(NULLIF(water_l, ''), '0') AS INTEGER) + 120 
-       WHERE id = $1`,
-       [req.user.id]
-    );
+    await addXpAndUpdateStreak(req.user.id, 25, 1, 3, 120);
 
     res.json(parsedData);
   } catch (error) {
@@ -558,13 +554,7 @@ Keep steps ultra-simple and focused on saving food from going to waste. Do not i
     const parsedRecipe = JSON.parse(response.text());
 
     // Replaced id = 1 with req.user.id
-    await pool.query(
-      `UPDATE profile 
-       SET xp = xp + 20, waste_kg = waste_kg + 1, co2_kg = co2_kg + 2, 
-           water_l = CAST(COALESCE(NULLIF(water_l, ''), '0') AS INTEGER) + 250 
-       WHERE id = $1`,
-       [req.user.id]
-    );
+    await addXpAndUpdateStreak(req.user.id, 20, 1, 2, 250);
 
     res.json(parsedRecipe);
   } catch (error) {
@@ -580,7 +570,11 @@ app.post('/api/profile/update', authMiddleware, async (req, res) => {
     if (!name) return res.status(400).json({ error: 'Name is required' });
 
     // Replaced id = 1 with req.user.id
+    // Replaced id = 1 with req.user.id
     await pool.query('UPDATE profile SET name = $1 WHERE id = $2', [name.trim(), req.user.id]);
+    
+    // ADD THIS: Keep the core users table in sync!
+    await pool.query('UPDATE users SET name = $1 WHERE id = $2', [name.trim(), req.user.id]);
     res.json({ success: true, name: name.trim() });
   } catch (err) {
     res.status(500).json({ error: err.message });
