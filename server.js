@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 3000;
 
 // Initialize Gemini Client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
