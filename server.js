@@ -30,7 +30,7 @@ function getGeminiModel() {
   currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
   
   const client = new GoogleGenerativeAI(key);
-  return client.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  return client.getGenerativeModel({ model: 'gemini-3.6-flash' });
 }
 
 // Helper: Run generation with automatic key fallback and exponential backoff on 429
