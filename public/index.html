@@ -273,6 +273,22 @@
   background: #10b981;
   transform: translateY(-1px);
 }
+/* Disabled state for upload drop zone */
+.unified-dropzone-disabled {
+  opacity: 0.45 !important;
+  pointer-events: none !important;
+  filter: grayscale(1) !important;
+  cursor: not-allowed !important;
+}
+
+/* Disabled state for Open Camera button */
+.btn-open-camera:disabled {
+  background: #334155 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  border: 1px solid #475569 !important;
+  transform: none !important;
+}
 
 .scanner-badge-guide {
   display: grid;
@@ -665,11 +681,12 @@ body {
     </div>
   </div> <!-- End of tab-dashboard -->
 
-    <!-- TAB 2: WASTE SCANNER (REDESIGNED) -->
-    <!-- TAB 2: WASTE SCANNER (UNIFIED) -->
+  <!-- TAB 2: WASTE SCANNER (UNIFIED) -->
     <div id="tab-waste-scanner" class="tab-view">
       <div style="max-width: 680px; margin: 0 auto;">
         <button class="red-back-btn" onclick="returnToDashboard()">⬅ Back</button>
+        
+        <!-- Header & Description -->
         <div style="text-align: center; margin-bottom: 20px;">
           <h2 style="font-size: 24px; font-weight: 800; display: inline-flex; align-items: center; gap: 8px;">
             ♻️ Smart Waste Classifier
@@ -679,11 +696,12 @@ body {
           </p>
         </div>
 
+        <!-- Scanner Card -->
         <div class="unified-upload-box">
           <div class="unified-dropzone" id="unifiedDropzone">
             
             <!-- Upload Click Area -->
-            <div onclick="document.getElementById('wastePhotoInput').click()" style="cursor: pointer;">
+            <div id="uploadClickArea" onclick="triggerFileUpload()" style="cursor: pointer;">
               <div class="upload-icon-pill">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -703,28 +721,38 @@ body {
             <input type="file" id="wastePhotoInput" accept="image/*" style="display:none;" onchange="handleFileSelected(event)" />
 
             <!-- Divider -->
-            <div class="divider-or">OR</div>
+            <div id="scannerDivider" class="divider-or">OR</div>
 
             <!-- Open Camera Button -->
-            <button class="btn-open-camera" onclick="startCamera('waste')">
+            <button id="openCameraBtn" class="btn-open-camera" onclick="startCamera('waste')">
               📷 Open Camera
             </button>
 
             <!-- Live Camera Viewfinder -->
             <div id="wasteCameraBox" style="display:none; margin-top: 18px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border-subtle); background: #000; position: relative;">
               <video id="wasteVideo" autoplay playsinline style="width: 100%; max-height: 260px; object-fit: cover;"></video>
-              <button class="btn-action" style="position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); margin: 0; box-shadow: 0 4px 14px rgba(0,0,0,0.5);" onclick="captureSnapshot('waste')">
-                📸 Snap & Classify (+25 XP)
-              </button>
+              <div style="display: flex; gap: 8px; position: absolute; bottom: 12px; left: 16px; right: 16px;">
+                <button class="btn-action" style="flex: 1; margin: 0; box-shadow: 0 4px 14px rgba(0,0,0,0.5);" onclick="captureSnapshot('waste')">
+                  📸 Snap & Classify (+25 XP)
+                </button>
+                <button type="button" onclick="resetScannerMode()" style="background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #475569; border-radius: 10px; padding: 0 14px; cursor: pointer;">
+                  ✕ Cancel
+                </button>
+              </div>
             </div>
             <canvas id="wasteCanvas" style="display:none;"></canvas>
 
             <!-- File Upload Preview Thumbnail -->
             <div id="uploadPreviewWrap" style="display: none; margin-top: 16px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border-subtle);">
               <img id="uploadPreviewImg" src="" alt="Waste Preview" style="width: 100%; max-height: 240px; object-fit: cover; display: block;" />
-              <button id="scanUploadBtn" class="btn-action" style="margin: 10px 0 0 0; width: 100%;" onclick="analyzeWasteFile()">
-                ⚡ Classify Uploaded Photo (+25 XP)
-              </button>
+              <div style="display: flex; gap: 8px; margin-top: 10px;">
+                <button id="scanUploadBtn" class="btn-action" style="flex: 1; margin: 0;" onclick="analyzeWasteFile()">
+                  ⚡ Classify Uploaded Photo (+25 XP)
+                </button>
+                <button type="button" onclick="resetScannerMode()" style="background: var(--bg-card); color: #fff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 0 14px; cursor: pointer;">
+                  ✕ Cancel
+                </button>
+              </div>
             </div>
 
           </div>
@@ -754,7 +782,14 @@ body {
         <button class="btn-secondary" onclick="startCamera('food')">📷 Scan Leftovers with Camera</button>
         <div id="foodCameraBox" class="camera-box">
           <video id="foodVideo" autoplay playsinline></video>
-          <button class="btn-action" style="margin-top: 8px;" onclick="captureSnapshot('food')">📸 Snap & Cook Recipe (+15 XP)</button>
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <button class="btn-action" style="flex: 1; margin: 0;" onclick="captureSnapshot('food')">
+              📸 Snap & Cook Recipe (+15 XP)
+            </button>
+            <button type="button" onclick="resetFoodRescueMode()" style="background: var(--bg-surface); color: #fff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 0 16px; cursor: pointer;">
+              ✕ Cancel
+            </button>
+          </div>
         </div>
         <canvas id="foodCanvas" style="display:none;"></canvas>
 
@@ -867,6 +902,8 @@ body {
     // --- Return to Dashboard Logic ---
   function returnToDashboard() {
   // Find all sidebar navigation links
+  if (typeof resetScannerMode === 'function') resetScannerMode();
+  if (typeof resetFoodRescueMode === 'function') resetFoodRescueMode();
   const sidebarLinks = document.querySelectorAll('.sidebar a, aside a, .nav-item, .sidebar li');
   
   // Find the one that says "Dashboard" and click it
@@ -1288,6 +1325,19 @@ function handleFileSelected(event) {
   const file = event.target.files[0];
   if (!file) return;
 
+  currentScanMode = 'file';
+
+  // Stop and hide camera if it was running
+  if (activeStream) {
+    activeStream.getTracks().forEach(track => track.stop());
+    activeStream = null;
+  }
+  document.getElementById('wasteCameraBox').style.display = 'none';
+
+  // Disable and grey out Open Camera button
+  const cameraBtn = document.getElementById('openCameraBtn');
+  if (cameraBtn) cameraBtn.disabled = true;
+
   const reader = new FileReader();
   reader.onload = (e) => {
     const previewWrap = document.getElementById('uploadPreviewWrap');
@@ -1296,7 +1346,6 @@ function handleFileSelected(event) {
 
     if (previewImg) {
       previewImg.src = e.target.result;
-      // Add a smooth fade-in effect
       previewImg.style.opacity = '0';
       previewImg.style.transition = 'opacity 0.4s ease-in-out';
       setTimeout(() => previewImg.style.opacity = '1', 50);
@@ -1305,16 +1354,14 @@ function handleFileSelected(event) {
     if (previewWrap) previewWrap.style.display = 'block';
     if (scanBtn) {
       scanBtn.style.display = 'block';
-      // Reset button state just in case it was stuck from a previous error
       scanBtn.disabled = false;
       scanBtn.style.background = 'var(--accent-emerald, #22c55e)';
       scanBtn.style.color = '#000';
       scanBtn.style.cursor = 'pointer';
       scanBtn.innerHTML = '⚡ Classify Uploaded Photo (+25 XP)';
     }
-    
-    // Hide the dropzone text to keep the UI clean
-    const dropzoneContent = document.querySelector('.unified-dropzone > div:first-child');
+
+    const dropzoneContent = document.getElementById('uploadClickArea');
     if (dropzoneContent) dropzoneContent.style.display = 'none';
   };
   reader.readAsDataURL(file);
@@ -1391,6 +1438,10 @@ window.startCamera = async function(type) {
     }
 
 function switchTab(tabId) {
+  // Reset any active camera / upload preview when switching away
+  if (typeof resetScannerMode === 'function') resetScannerMode();
+  if (typeof resetFoodRescueMode === 'function') resetFoodRescueMode();
+
   const tabMap = {
     'dashboard': 'tab-dashboard',
     'scanner': 'tab-waste-scanner',
@@ -1448,18 +1499,30 @@ function switchTab(tabId) {
 
     // --- Camera Functions ---
     async function startCamera(type) {
-      if (activeStream) activeStream.getTracks().forEach(track => track.stop());
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        activeStream = stream;
-        const box = document.getElementById(type + 'CameraBox');
-        const video = document.getElementById(type + 'Video');
-        box.style.display = 'block';
-        video.srcObject = stream;
-      } catch (err) {
-        alert('Could not access camera: ' + err.message);
-      }
-    }
+  if (type === 'waste') {
+    currentScanMode = 'camera';
+    
+    // Disable and grey out the Drag & Drop area
+    const uploadArea = document.getElementById('uploadClickArea');
+    if (uploadArea) uploadArea.classList.add('unified-dropzone-disabled');
+
+    // Hide any previous file preview
+    document.getElementById('uploadPreviewWrap').style.display = 'none';
+  }
+
+  if (activeStream) activeStream.getTracks().forEach(track => track.stop());
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    activeStream = stream;
+    const box = document.getElementById(type + 'CameraBox');
+    const video = document.getElementById(type + 'Video');
+    box.style.display = 'block';
+    video.srcObject = stream;
+  } catch (err) {
+    alert('Could not access camera: ' + err.message);
+    resetScannerMode();
+  }
+}
 
     function captureSnapshot(type) {
       const video = document.getElementById(type + 'Video');
@@ -2053,6 +2116,76 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+let currentScanMode = null; // 'file' or 'camera'
+
+function triggerFileUpload() {
+  if (currentScanMode === 'camera') return;
+  document.getElementById('wastePhotoInput').click();
+}
+
+function resetScannerMode() {
+  currentScanMode = null;
+
+  // Stop camera if running
+  if (activeStream) {
+    activeStream.getTracks().forEach(track => track.stop());
+    activeStream = null;
+  }
+  const cameraBox = document.getElementById('wasteCameraBox');
+  if (cameraBox) cameraBox.style.display = 'none';
+
+  // Clear preview and reset file input
+  const fileInput = document.getElementById('wastePhotoInput');
+  if (fileInput) fileInput.value = '';
+  const previewWrap = document.getElementById('uploadPreviewWrap');
+  if (previewWrap) previewWrap.style.display = 'none';
+
+  // Re-enable Drag & Drop area
+  const uploadArea = document.getElementById('uploadClickArea');
+  if (uploadArea) {
+    uploadArea.style.display = 'block';
+    uploadArea.classList.remove('unified-dropzone-disabled');
+  }
+
+  // Re-enable Open Camera button
+  const cameraBtn = document.getElementById('openCameraBtn');
+  if (cameraBtn) {
+    cameraBtn.disabled = false;
+  }
+}
+function resetFoodRescueMode() {
+  // 1. Stop active camera streams if any
+  if (activeStream) {
+    activeStream.getTracks().forEach(track => track.stop());
+    activeStream = null;
+  }
+
+  // 2. Hide camera box
+  const foodCamera = document.getElementById('foodCameraBox');
+  if (foodCamera) foodCamera.style.display = 'none';
+
+  // 3. Clear the text input
+  const foodInput = document.getElementById('foodInput');
+  if (foodInput) foodInput.value = '';
+
+  // 4. Hide previous recipe results
+  const foodResult = document.getElementById('foodResult');
+  if (foodResult) {
+    foodResult.style.display = 'none';
+    foodResult.innerHTML = '';
+  }
+
+  // 5. Restore recipe generate button to its default active state
+  const recipeBtn = document.querySelector('#tab-food-rescue button[onclick*="rescueFoodText"], #tab-food-rescue button[onclick*="Recipe"]');
+  if (recipeBtn) {
+    recipeBtn.disabled = false;
+    recipeBtn.style.background = 'linear-gradient(135deg, var(--accent-emerald), var(--accent-teal))';
+    recipeBtn.style.color = '#070d17';
+    recipeBtn.style.border = 'none';
+    recipeBtn.style.cursor = 'pointer';
+    recipeBtn.innerHTML = 'Generate Zero-Waste Recipe (+30 XP)';
+  }
+}
 </script>
 <!-- Mobile Drawer Backdrop -->
 <div id="sidebarBackdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9998;"></div>
