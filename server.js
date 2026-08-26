@@ -16,9 +16,63 @@ const pool = new Pool({
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize Gemini Client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
+// Parse all available Gemini API keys
+const rawKeys = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || '';
+const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(Boolean);
+let currentKeyIndex = 0;
+
+// Helper: Get model instance using round-robin rotation
+function getGeminiModel() {
+  if (apiKeys.length === 0) {
+    throw new Error('No Gemini API keys configured.');
+  }
+  const key = apiKeys[currentKeyIndex % apiKeys.length];
+  currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
+  
+  const client = new GoogleGenerativeAI(key);
+  return client.getGenerativeModel({ model: 'gemini-2.5-flash' });
+}
+
+// Helper: Run generation with automatic key fallback and exponential backoff on 429
+async function generateContentWithFallback(contentsConfig, maxRetries = 2, initialDelayMs = 1500) {
+  let lastError = null;
+  const totalKeys = Math.max(apiKeys.length, 1);
+
+  // 1. Try across all available API keys first
+  for (let keyAttempt = 0; keyAttempt < totalKeys; keyAttempt++) {
+    try {
+      const activeModel = getGeminiModel();
+      return await activeModel.generateContent(contentsConfig);
+    } catch (err) {
+      lastError = err;
+      const isRateLimit = err.status === 429 || (err.message && err.message.includes('429'));
+
+      if (isRateLimit) {
+        console.warn(`Gemini key rate-limited. Trying key ${keyAttempt + 2}/${totalKeys}...`);
+        continue;
+      }
+      throw err; // Fail fast for invalid prompts or non-rate-limit errors
+    }
+  }
+
+  // 2. If all keys hit rate limits, pause with exponential backoff before retrying
+  for (let retry = 0; retry < maxRetries; retry++) {
+    const delay = initialDelayMs * Math.pow(2, retry);
+    console.warn(`All keys busy. Retrying in ${delay}ms (Attempt ${retry + 1}/${maxRetries})...`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+
+    try {
+      const activeModel = getGeminiModel();
+      return await activeModel.generateContent(contentsConfig);
+    } catch (err) {
+      lastError = err;
+      const isRateLimit = err.status === 429 || (err.message && err.message.includes('429'));
+      if (!isRateLimit) throw err;
+    }
+  }
+
+  throw lastError;
+}
 
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
@@ -30,6 +84,13 @@ async function initDB() {
     // Initialize users table
     await initializeUsersTable(pool);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS scan_cache (
+        query_key TEXT PRIMARY KEY,
+        response_json JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     // 1. Profile Table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS profile (
@@ -456,10 +517,10 @@ Return ONLY valid JSON.`;
       }
 
       try {
-        const result = await model.generateContent({
-          contents: [{ role: "user", parts: parts.map(p => typeof p === 'string' ? { text: p } : p) }],
-          generationConfig: { responseMimeType: "application/json" }
-        });
+        const result = await generateContentWithFallback({
+  contents: [{ role: "user", parts: parts.map(p => typeof p === 'string' ? { text: p } : p) }],
+  generationConfig: { responseMimeType: "application/json" }
+});
         const response = await result.response;
         const parsed = JSON.parse(response.text());
         severity = parsed.severity || severity;
@@ -543,10 +604,10 @@ Do not include markdown fences or any other text outside the JSON.`;
     };
 
     // Force JSON output at the SDK level
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }, imagePart] }],
-      generationConfig: { responseMimeType: "application/json" }
-    });
+    const result = await generateContentWithFallback({
+  contents: [{ role: "user", parts: [{ text: prompt }, imagePart] }],
+  generationConfig: { responseMimeType: "application/json" }
+});
     const response = await result.response;
     
     // No more regex replace needed!
@@ -566,11 +627,27 @@ res.json({
   }
 });
 
-// AI Food Rescue
+// AI Food Rescue with Caching
 app.post('/api/ai/food-rescue', authMiddleware, async (req, res) => {
   try {
     const { ingredients, imageBase64 } = req.body;
     let parts = [];
+
+    // 1. If text ingredients are provided, check the cache first
+    let cacheKey = null;
+    if (ingredients && !imageBase64) {
+      cacheKey = ingredients.toLowerCase().split(',').map(s => s.trim()).sort().join(',');
+      const cached = await pool.query('SELECT response_json FROM scan_cache WHERE query_key = $1', [cacheKey]);
+      
+      if (cached.rows.length > 0) {
+        // Cache hit: Return cached recipe and skip Gemini API call!
+        const updatedProfile = await addXpAndUpdateStreak(req.user.id, 20, 1, 2, 250);
+        return res.json({
+          ...cached.rows[0].response_json,
+          user: updatedProfile
+        });
+      }
+    }
 
     const prompt = `You are a zero-waste chef. Analyze the provided ingredients or image. Return ONLY a valid JSON object matching this exact schema:
 {
@@ -599,20 +676,27 @@ Keep steps ultra-simple and focused on saving food from going to waste. Do not i
       return res.status(400).json({ error: 'Please enter ingredients or scan food items.' });
     }
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: parts.map(p => typeof p === 'string' ? { text: p } : p) }],
-      generationConfig: { responseMimeType: "application/json" }
-    });
+    const result = await generateContentWithFallback({
+  contents: [{ role: "user", parts: parts.map(p => typeof p === 'string' ? { text: p } : p) }],
+  generationConfig: { responseMimeType: "application/json" }
+});
     const response = await result.response;
-    
     const parsedRecipe = JSON.parse(response.text());
 
-const updatedProfile = await addXpAndUpdateStreak(req.user.id, 20, 1, 2, 250);
+    // 2. Save result to database cache if it was a text query
+    if (cacheKey) {
+      await pool.query(
+        'INSERT INTO scan_cache (query_key, response_json) VALUES ($1, $2) ON CONFLICT (query_key) DO NOTHING',
+        [cacheKey, parsedRecipe]
+      );
+    }
 
-res.json({
-  ...parsedRecipe,
-  user: updatedProfile
-});
+    const updatedProfile = await addXpAndUpdateStreak(req.user.id, 20, 1, 2, 250);
+
+    res.json({
+      ...parsedRecipe,
+      user: updatedProfile
+    });
   } catch (error) {
     console.error("Food Rescue Error:", error);
     res.status(500).json({ error: error.message || 'Failed to generate recipe' });
