@@ -887,6 +887,11 @@ body {
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
   <script>
+    // 🔒 Auth Guard: Redirect unauthenticated users immediately to sign in
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.replace('/signin.html');
+  }
     let activeStream = null;
   function applyServerProfileUpdate(updatedUser) {
   if (!updatedUser) return;

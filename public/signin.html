@@ -199,6 +199,10 @@
     </div>
 
     <script>
+        // If already signed in, go directly to the dashboard
+  if (localStorage.getItem('token')) {
+    window.location.replace('/');
+  }
         const form = document.getElementById('signinForm');
         const signinBtn = document.getElementById('signinBtn');
 
